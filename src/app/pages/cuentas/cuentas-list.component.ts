@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { CuentaBancaria } from '../../models/interfaces';
+import { CuentaModalComponent } from '../../components/modals/cuenta-modal/cuenta-modal.component';
 
 @Component({
   selector: 'app-cuentas-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CuentaModalComponent],
   template: `
     <div class="cuentas-page">
       <div class="page-header">
@@ -14,7 +15,7 @@ import { CuentaBancaria } from '../../models/interfaces';
           <h1>{{ i18n.t('accounts.title') }}</h1>
           <p class="header-subtitle">{{ cuentas.length }} {{ i18n.language() === 'fr' ? 'comptes enregistrés' : 'cuentas registradas' }}</p>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
           {{ i18n.t('accounts.new') }}
         </button>
@@ -55,7 +56,7 @@ import { CuentaBancaria } from '../../models/interfaces';
                     }
                   </td>
                   <td>
-                    <button class="btn btn-secondary btn-sm">{{ i18n.t('actions.edit') }}</button>
+                    <button class="btn btn-secondary btn-sm" (click)="openEditModal(cuenta)">{{ i18n.t('actions.edit') }}</button>
                   </td>
                 </tr>
               }
@@ -63,6 +64,13 @@ import { CuentaBancaria } from '../../models/interfaces';
           </table>
         </div>
       </div>
+
+      <app-cuenta-modal
+        [isOpen]="isModalOpen"
+        [cuenta]="selectedCuenta"
+        (closed)="closeModal()"
+        (saved)="onCuentaSaved($event)"
+      />
     </div>
   `,
   styles: [`
@@ -83,9 +91,41 @@ import { CuentaBancaria } from '../../models/interfaces';
 export class CuentasListComponent {
   i18n = inject(I18nService);
 
+  // Modal handling
+  isModalOpen = false;
+  selectedCuenta?: CuentaBancaria;
+
   cuentas: CuentaBancaria[] = [
     { id: 1, nombreBanco: 'Banque Nationale', nombreCuenta: 'Compte Opérations', ultimos4Digitos: '3421', moneda: 'CAD', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 2, nombreBanco: 'TD Bank', nombreCuenta: 'Business USD', ultimos4Digitos: '8876', moneda: 'USD', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 3, nombreBanco: 'Desjardins', nombreCuenta: 'Épargne Entreprise', ultimos4Digitos: '2245', moneda: 'CAD', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }
   ];
+
+  openCreateModal(): void {
+    this.selectedCuenta = undefined;
+    this.isModalOpen = true;
+  }
+
+  openEditModal(cuenta: CuentaBancaria): void {
+    this.selectedCuenta = cuenta;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedCuenta = undefined;
+  }
+
+  onCuentaSaved(cuenta: CuentaBancaria): void {
+    if (this.selectedCuenta) {
+      const idx = this.cuentas.findIndex(c => c.id === cuenta.id);
+      if (idx >= 0) {
+        this.cuentas[idx] = cuenta;
+      }
+    } else {
+      cuenta.id = this.cuentas.length ? Math.max(...this.cuentas.map(c => c.id)) + 1 : 1;
+      this.cuentas.push(cuenta);
+    }
+    this.closeModal();
+  }
 }

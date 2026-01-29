@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
 import { Cliente } from '../../models/interfaces';
+import { ClienteModalComponent } from '../../components/modals/cliente-modal/cliente-modal.component';
 
 @Component({
   selector: 'app-clientes-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ClienteModalComponent],
   template: `
     <div class="clientes-page">
       <!-- Page Header -->
@@ -16,7 +17,7 @@ import { Cliente } from '../../models/interfaces';
           <h1>{{ i18n.t('clients.title') }}</h1>
           <p class="header-subtitle">{{ clientes.length }} {{ i18n.language() === 'fr' ? 'clients enregistrés' : 'clientes registrados' }}</p>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
           {{ i18n.t('clients.new') }}
         </button>
@@ -76,7 +77,7 @@ import { Cliente } from '../../models/interfaces';
                   </td>
                   <td>
                     <div class="actions-cell">
-                      <button class="btn btn-secondary btn-sm">{{ i18n.t('actions.edit') }}</button>
+                      <button class="btn btn-secondary btn-sm" (click)="openEditModal(cliente)">{{ i18n.t('actions.edit') }}</button>
                     </div>
                   </td>
                 </tr>
@@ -91,6 +92,13 @@ import { Cliente } from '../../models/interfaces';
           </table>
         </div>
       </div>
+
+      <app-cliente-modal
+        [isOpen]="isModalOpen"
+        [cliente]="selectedCliente"
+        (closed)="closeModal()"
+        (saved)="onClienteSaved($event)"
+      />
     </div>
   `,
   styles: [`
@@ -119,6 +127,10 @@ export class ClientesListComponent {
   i18n = inject(I18nService);
   searchQuery = '';
 
+  // Modal handling
+  isModalOpen = false;
+  selectedCliente?: Cliente;
+
   clientes: Cliente[] = [
     { id: 1, nombre: 'Hôtel Le Germain', ubicacion: 'Montréal, QC', telefono: '+1 514 555-1001', correo: 'reservations@legermain.com', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 2, nombre: 'Fairmont Château Frontenac', ubicacion: 'Québec City, QC', telefono: '+1 418 555-2002', correo: 'info@frontenac.com', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
@@ -127,6 +139,34 @@ export class ClientesListComponent {
     { id: 5, nombre: 'Le Mount Stephen', ubicacion: 'Montréal, QC', correo: 'concierge@lemountstephen.com', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 6, nombre: 'Château Laurier', ubicacion: 'Ottawa, ON', telefono: '+1 613 555-6006', activo: false, fechaCreacion: new Date(), fechaActualizacion: new Date() }
   ];
+
+  openCreateModal(): void {
+    this.selectedCliente = undefined;
+    this.isModalOpen = true;
+  }
+
+  openEditModal(cliente: Cliente): void {
+    this.selectedCliente = cliente;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedCliente = undefined;
+  }
+
+  onClienteSaved(cliente: Cliente): void {
+    if (this.selectedCliente) {
+      const idx = this.clientes.findIndex(c => c.id === cliente.id);
+      if (idx >= 0) {
+        this.clientes[idx] = cliente;
+      }
+    } else {
+      cliente.id = this.clientes.length ? Math.max(...this.clientes.map(c => c.id)) + 1 : 1;
+      this.clientes.push(cliente);
+    }
+    this.closeModal();
+  }
 
   get filteredClientes(): Cliente[] {
     if (!this.searchQuery) return this.clientes;

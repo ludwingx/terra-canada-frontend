@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { Usuario } from '../../models/interfaces';
+import { UsuarioModalComponent } from '../../components/modals/usuario-modal/usuario-modal.component';
 
 @Component({
   selector: 'app-usuarios-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, UsuarioModalComponent],
   template: `
     <div class="usuarios-page">
       <div class="page-header">
@@ -14,7 +15,7 @@ import { Usuario } from '../../models/interfaces';
           <h1>{{ i18n.t('users.title') }}</h1>
           <p class="header-subtitle">{{ usuarios.length }} {{ i18n.language() === 'fr' ? 'utilisateurs' : 'usuarios' }}</p>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
           {{ i18n.t('users.new') }}
         </button>
@@ -57,7 +58,7 @@ import { Usuario } from '../../models/interfaces';
                     }
                   </td>
                   <td>
-                    <button class="btn btn-secondary btn-sm">{{ i18n.t('actions.edit') }}</button>
+                    <button class="btn btn-secondary btn-sm" (click)="openEditModal(user)">{{ i18n.t('actions.edit') }}</button>
                   </td>
                 </tr>
               }
@@ -65,6 +66,13 @@ import { Usuario } from '../../models/interfaces';
           </table>
         </div>
       </div>
+
+      <app-usuario-modal
+        [isOpen]="isModalOpen"
+        [usuario]="selectedUsuario"
+        (closed)="closeModal()"
+        (saved)="onUsuarioSaved($event)"
+      />
     </div>
   `,
   styles: [`
@@ -102,12 +110,44 @@ import { Usuario } from '../../models/interfaces';
 export class UsuariosListComponent {
   i18n = inject(I18nService);
 
+  // Modal handling
+  isModalOpen = false;
+  selectedUsuario?: Usuario;
+
   usuarios: Usuario[] = [
     { id: 1, nombreUsuario: 'admin', correo: 'admin@terracanada.ca', nombreCompleto: 'Jean Dupont', rolId: 1, rol: { id: 1, nombre: 'ADMIN', fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 2, nombreUsuario: 'supervisor1', correo: 'marie.tremblay@terracanada.ca', nombreCompleto: 'Marie Tremblay', rolId: 2, rol: { id: 2, nombre: 'SUPERVISOR', fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 3, nombreUsuario: 'equipo1', correo: 'pierre.gagnon@terracanada.ca', nombreCompleto: 'Pierre Gagnon', rolId: 3, rol: { id: 3, nombre: 'EQUIPO', fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 4, nombreUsuario: 'equipo2', correo: 'sophie.roy@terracanada.ca', nombreCompleto: 'Sophie Roy', rolId: 3, rol: { id: 3, nombre: 'EQUIPO', fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }
   ];
+
+  openCreateModal(): void {
+    this.selectedUsuario = undefined;
+    this.isModalOpen = true;
+  }
+
+  openEditModal(usuario: Usuario): void {
+    this.selectedUsuario = usuario;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedUsuario = undefined;
+  }
+
+  onUsuarioSaved(usuario: Usuario): void {
+    if (this.selectedUsuario) {
+      const idx = this.usuarios.findIndex(u => u.id === usuario.id);
+      if (idx >= 0) {
+        this.usuarios[idx] = usuario;
+      }
+    } else {
+      usuario.id = this.usuarios.length ? Math.max(...this.usuarios.map(u => u.id)) + 1 : 1;
+      this.usuarios.push(usuario);
+    }
+    this.closeModal();
+  }
 
   getInitials(name: string): string {
     return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();

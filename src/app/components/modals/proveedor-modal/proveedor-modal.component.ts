@@ -1,0 +1,324 @@
+import { Component, EventEmitter, Input, Output, inject, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { I18nService } from '../../../services/i18n.service';
+import { ModalComponent } from '../../shared/modal/modal.component';
+import { Proveedor, ProveedorCorreo, Servicio } from '../../../models/interfaces';
+
+// Servicios disponibles (basados en la documentación)
+const SERVICIOS: Servicio[] = [
+  { id: 1, nombre: 'Assurance', activo: true, fechaCreacion: new Date() },
+  { id: 2, nombre: 'Comptable', activo: true, fechaCreacion: new Date() },
+  { id: 3, nombre: 'Cadeaux et invitations', activo: true, fechaCreacion: new Date() },
+  { id: 4, nombre: 'Bureau / équipement / internet, téléphonie', activo: true, fechaCreacion: new Date() },
+  { id: 5, nombre: 'Voyage de reco', activo: true, fechaCreacion: new Date() },
+  { id: 6, nombre: 'Frais coworking/cafés', activo: true, fechaCreacion: new Date() },
+  { id: 7, nombre: 'Hotels', activo: true, fechaCreacion: new Date() },
+  { id: 8, nombre: 'Opérations clients (Services/activités/guides/entrées/transports)', activo: true, fechaCreacion: new Date() },
+  { id: 9, nombre: 'Promotion de l\'agence', activo: true, fechaCreacion: new Date() },
+  { id: 10, nombre: 'Salaires', activo: true, fechaCreacion: new Date() },
+];
+
+interface CorreoForm {
+  correo: string;
+  principal: boolean;
+}
+
+@Component({
+  selector: 'app-proveedor-modal',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ModalComponent],
+  template: `
+    <app-modal
+      [isOpen]="isOpen"
+      [title]="isEdit ? (i18n.language() === 'fr' ? 'Modifier le fournisseur' : 'Editar proveedor') : (i18n.language() === 'fr' ? 'Nouveau fournisseur' : 'Nuevo proveedor')"
+      [loading]="loading"
+      [canSave]="isFormValid()"
+      size="lg"
+      (closed)="onClose()"
+      (saved)="onSave()"
+    >
+      <form class="form-grid">
+        <!-- Nombre -->
+        <div class="form-group full-width">
+          <label class="form-label required">{{ i18n.t('suppliers.name') }}</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            [(ngModel)]="form.nombre" 
+            name="nombre"
+            [placeholder]="i18n.language() === 'fr' ? 'Nom du fournisseur' : 'Nombre del proveedor'"
+          >
+        </div>
+
+        <!-- Servicio -->
+        <div class="form-group">
+          <label class="form-label required">{{ i18n.t('suppliers.service') }}</label>
+          <select class="form-control" [(ngModel)]="form.servicioId" name="servicioId">
+            <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner un service' : 'Seleccionar un servicio' }}</option>
+            @for (servicio of servicios; track servicio.id) {
+              <option [ngValue]="servicio.id">{{ servicio.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Lenguaje -->
+        <div class="form-group">
+          <label class="form-label">{{ i18n.t('suppliers.language') }}</label>
+          <select class="form-control" [(ngModel)]="form.lenguaje" name="lenguaje">
+            <option value="">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
+            <option value="Français">Français</option>
+            <option value="English">English</option>
+            <option value="Español">Español</option>
+            <option value="Français/English">Français/English</option>
+          </select>
+        </div>
+
+        <!-- Teléfono -->
+        <div class="form-group">
+          <label class="form-label">{{ i18n.t('suppliers.phone') }}</label>
+          <input 
+            type="tel" 
+            class="form-control" 
+            [(ngModel)]="form.telefono" 
+            name="telefono"
+            placeholder="+1 514 555-0000"
+          >
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group full-width">
+          <label class="form-label">{{ i18n.language() === 'fr' ? 'Description' : 'Descripción' }}</label>
+          <textarea 
+            class="form-control" 
+            [(ngModel)]="form.descripcion" 
+            name="descripcion"
+            rows="2"
+          ></textarea>
+        </div>
+
+        <!-- Correos (máximo 4) -->
+        <div class="form-group full-width">
+          <label class="form-label">{{ i18n.t('suppliers.emails') }} ({{ correos.length }}/4)</label>
+          
+          <div class="correos-list">
+            @for (correo of correos; track $index; let i = $index) {
+              <div class="correo-row">
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  [(ngModel)]="correo.correo" 
+                  [name]="'correo_' + i"
+                  placeholder="email@example.com"
+                >
+                <label class="checkbox-label">
+                  <input 
+                    type="radio" 
+                    name="principal" 
+                    [checked]="correo.principal"
+                    (change)="setPrincipal(i)"
+                  >
+                  {{ i18n.language() === 'fr' ? 'Principal' : 'Principal' }}
+                </label>
+                <button type="button" class="btn btn-icon btn-danger-text" (click)="removeCorreo(i)">🗑️</button>
+              </div>
+            }
+          </div>
+
+          @if (correos.length < 4) {
+            <button type="button" class="btn btn-secondary btn-sm mt-2" (click)="addCorreo()">
+              ➕ {{ i18n.language() === 'fr' ? 'Ajouter un courriel' : 'Agregar correo' }}
+            </button>
+          }
+        </div>
+
+        <!-- Estado activo -->
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="form.activo" name="activo">
+            {{ i18n.t('status.active') }}
+          </label>
+        </div>
+      </form>
+    </app-modal>
+  `,
+  styles: [`
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+    }
+
+    .full-width { grid-column: 1 / -1; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+
+      &.required::after {
+        content: ' *';
+        color: #dc3545;
+      }
+    }
+
+    .correos-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    .correo-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+
+      .form-control { flex: 1; }
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+
+      input { cursor: pointer; }
+    }
+
+    .btn-danger-text {
+      color: #dc3545;
+      background: transparent;
+      border: none;
+      padding: 4px;
+
+      &:hover { background: #fee2e2; }
+    }
+
+    .mt-2 { margin-top: var(--spacing-sm); }
+  `]
+})
+export class ProveedorModalComponent implements OnChanges {
+  i18n = inject(I18nService);
+
+  @Input() isOpen = false;
+  @Input() proveedor?: Proveedor;
+
+  @Output() closed = new EventEmitter<void>();
+  @Output() saved = new EventEmitter<Proveedor>();
+
+  loading = false;
+  servicios = SERVICIOS;
+
+  form = {
+    nombre: '',
+    servicioId: null as number | null,
+    lenguaje: '',
+    telefono: '',
+    descripcion: '',
+    activo: true
+  };
+
+  correos: CorreoForm[] = [{ correo: '', principal: true }];
+
+  get isEdit(): boolean {
+    return !!this.proveedor;
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen'] && this.isOpen) {
+      // Reinicializar el formulario cuando se abre el modal
+      if (this.proveedor) {
+        this.form = {
+          nombre: this.proveedor.nombre,
+          servicioId: this.proveedor.servicioId,
+          lenguaje: this.proveedor.lenguaje || '',
+          telefono: this.proveedor.telefono || '',
+          descripcion: this.proveedor.descripcion || '',
+          activo: this.proveedor.activo
+        };
+        this.correos = this.proveedor.correos?.map(c => ({
+          correo: c.correo,
+          principal: c.principal
+        })) || [{ correo: '', principal: true }];
+      } else {
+        this.resetForm();
+      }
+    }
+  }
+
+
+  isFormValid(): boolean {
+    return !!(this.form.nombre.trim() && this.form.servicioId);
+  }
+
+  addCorreo(): void {
+    if (this.correos.length < 4) {
+      this.correos.push({ correo: '', principal: false });
+    }
+  }
+
+  removeCorreo(index: number): void {
+    const wasPrincipal = this.correos[index].principal;
+    this.correos.splice(index, 1);
+    if (wasPrincipal && this.correos.length > 0) {
+      this.correos[0].principal = true;
+    }
+  }
+
+  setPrincipal(index: number): void {
+    this.correos.forEach((c, i) => c.principal = i === index);
+  }
+
+  onClose(): void {
+    this.resetForm();
+    this.closed.emit();
+  }
+
+  onSave(): void {
+    if (!this.isFormValid()) return;
+
+    this.loading = true;
+
+    const proveedor: Proveedor = {
+      id: this.proveedor?.id || 0,
+      nombre: this.form.nombre,
+      servicioId: this.form.servicioId!,
+      servicio: this.servicios.find(s => s.id === this.form.servicioId),
+      lenguaje: this.form.lenguaje || undefined,
+      telefono: this.form.telefono || undefined,
+      descripcion: this.form.descripcion || undefined,
+      activo: this.form.activo,
+      correos: this.correos.filter(c => c.correo.trim()).map((c, i) => ({
+        id: i + 1,
+        proveedorId: this.proveedor?.id || 0,
+        correo: c.correo,
+        principal: c.principal,
+        activo: true,
+        fechaCreacion: new Date()
+      })),
+      fechaCreacion: this.proveedor?.fechaCreacion || new Date(),
+      fechaActualizacion: new Date()
+    };
+
+    // Simular guardado
+    setTimeout(() => {
+      this.loading = false;
+      this.saved.emit(proveedor);
+      this.resetForm();
+    }, 500);
+  }
+
+  private resetForm(): void {
+    this.form = { nombre: '', servicioId: null, lenguaje: '', telefono: '', descripcion: '', activo: true };
+    this.correos = [{ correo: '', principal: true }];
+  }
+}

@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { DashboardKPIs, TopProveedor, Pago, Proveedor, Servicio } from '../../models/interfaces';
+import { PagoModalComponent } from '../../components/modals/pago-modal/pago-modal.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PagoModalComponent],
   template: `
     <div class="dashboard">
       <!-- Page Header -->
@@ -15,7 +16,7 @@ import { DashboardKPIs, TopProveedor, Pago, Proveedor, Servicio } from '../../mo
           <h1>{{ i18n.t('dashboard.title') }}</h1>
           <p class="header-subtitle">{{ getCurrentDate() }}</p>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
           {{ i18n.t('payments.new') }}
         </button>
@@ -158,6 +159,13 @@ import { DashboardKPIs, TopProveedor, Pago, Proveedor, Servicio } from '../../mo
           </table>
         </div>
       </div>
+
+      <app-pago-modal
+        [isOpen]="isModalOpen"
+        [pago]="selectedPago"
+        (closed)="closeModal()"
+        (saved)="onPagoSaved($event)"
+      />
     </div>
   `,
   styles: [`
@@ -245,6 +253,10 @@ import { DashboardKPIs, TopProveedor, Pago, Proveedor, Servicio } from '../../mo
 export class DashboardComponent {
   i18n = inject(I18nService);
 
+  // Modal handling
+  isModalOpen = false;
+  selectedPago?: Pago;
+
   // Datos de ejemplo para demostración
   kpis: DashboardKPIs = {
     pagosPendientes: 23,
@@ -287,6 +299,22 @@ export class DashboardComponent {
     { id: 4, proveedorId: 1, proveedor: { id: 1, nombre: 'Voyage Excellence', servicioId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-004', monto: 3200.00, moneda: 'USD', tipoMedioPago: 'TARJETA', pagado: true, verificado: true, gmailEnviado: true, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date()  },
     { id: 5, proveedorId: 4, proveedor: { id: 4, nombre: 'Location Auto QC', servicioId: 4, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-005', monto: 780.00, moneda: 'CAD', tipoMedioPago: 'CUENTA_BANCARIA', pagado: true, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }
   ];
+
+  openCreateModal(): void {
+    this.selectedPago = undefined;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedPago = undefined;
+  }
+
+  onPagoSaved(pago: Pago): void {
+    pago.id = this.recentPagos.length ? Math.max(...this.recentPagos.map(p => p.id)) + 1 : 1;
+    this.recentPagos = [pago, ...this.recentPagos];
+    this.closeModal();
+  }
 
   getCurrentDate(): string {
     const options: Intl.DateTimeFormatOptions = { 

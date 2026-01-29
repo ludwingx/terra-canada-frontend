@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
 import { Proveedor } from '../../models/interfaces';
+import { ProveedorModalComponent } from '../../components/modals/proveedor-modal/proveedor-modal.component';
 
 @Component({
   selector: 'app-proveedores-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ProveedorModalComponent],
   template: `
     <div class="proveedores-page">
       <!-- Page Header -->
@@ -16,7 +17,7 @@ import { Proveedor } from '../../models/interfaces';
           <h1>{{ i18n.t('suppliers.title') }}</h1>
           <p class="header-subtitle">{{ proveedores.length }} {{ i18n.language() === 'fr' ? 'fournisseurs actifs' : 'proveedores activos' }}</p>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
           {{ i18n.t('suppliers.new') }}
         </button>
@@ -97,7 +98,7 @@ import { Proveedor } from '../../models/interfaces';
 
             <div class="supplier-actions">
               <button class="btn btn-secondary btn-sm">{{ i18n.t('actions.view') }}</button>
-              <button class="btn btn-primary btn-sm">{{ i18n.t('actions.edit') }}</button>
+              <button class="btn btn-primary btn-sm" (click)="openEditModal(proveedor)">{{ i18n.t('actions.edit') }}</button>
             </div>
           </div>
         } @empty {
@@ -106,6 +107,14 @@ import { Proveedor } from '../../models/interfaces';
           </div>
         }
       </div>
+
+      <!-- Modal Proveedor -->
+      <app-proveedor-modal
+        [isOpen]="isModalOpen"
+        [proveedor]="selectedProveedor"
+        (closed)="closeModal()"
+        (saved)="onProveedorSaved($event)"
+      />
     </div>
   `,
   styles: [`
@@ -273,5 +282,39 @@ export class ProveedoresListComponent {
 
   getInitials(name: string): string {
     return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  }
+
+  // Modal handling
+  isModalOpen = false;
+  selectedProveedor?: Proveedor;
+
+  openCreateModal(): void {
+    this.selectedProveedor = undefined;
+    this.isModalOpen = true;
+  }
+
+  openEditModal(proveedor: Proveedor): void {
+    this.selectedProveedor = proveedor;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedProveedor = undefined;
+  }
+
+  onProveedorSaved(proveedor: Proveedor): void {
+    if (this.selectedProveedor) {
+      // Editar existente
+      const idx = this.proveedores.findIndex(p => p.id === proveedor.id);
+      if (idx >= 0) {
+        this.proveedores[idx] = proveedor;
+      }
+    } else {
+      // Crear nuevo
+      proveedor.id = Math.max(...this.proveedores.map(p => p.id)) + 1;
+      this.proveedores.push(proveedor);
+    }
+    this.closeModal();
   }
 }

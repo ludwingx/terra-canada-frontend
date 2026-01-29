@@ -52,12 +52,6 @@ import { ThemeService } from '../../../services/theme.service';
           {{ themeService.isDark() ? '☀️' : '🌙' }}
         </button>
 
-        <!-- Notifications -->
-        <button class="action-btn notifications-btn" [title]="i18n.t('header.notifications')">
-          <span class="notification-icon">🔔</span>
-          <span class="notification-badge">3</span>
-        </button>
-
         <!-- User Menu -->
         <div class="user-menu">
           <button class="user-btn" (click)="toggleUserMenu()">
@@ -171,33 +165,12 @@ import { ThemeService } from '../../../services/theme.service';
       }
     }
 
-    .theme-btn, .notifications-btn {
+    .theme-btn {
       background: var(--bg-input);
       border: 1px solid var(--border-color);
       border-radius: var(--border-radius);
       width: 40px;
       height: 40px;
-    }
-
-    .notifications-btn {
-      position: relative;
-    }
-
-    .notification-badge {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      background: #dc3545;
-      color: white;
-      font-size: 10px;
-      font-weight: 600;
-      min-width: 18px;
-      height: 18px;
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 4px;
     }
 
     .user-menu {

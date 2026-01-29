@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { TarjetaCredito } from '../../models/interfaces';
+import { TarjetaModalComponent } from '../../components/modals/tarjeta-modal/tarjeta-modal.component';
 
 @Component({
   selector: 'app-tarjetas-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TarjetaModalComponent],
   template: `
     <div class="tarjetas-page">
       <!-- Page Header -->
@@ -15,7 +16,7 @@ import { TarjetaCredito } from '../../models/interfaces';
           <h1>{{ i18n.t('cards.title') }}</h1>
           <p class="header-subtitle">{{ tarjetas.length }} {{ i18n.language() === 'fr' ? 'cartes enregistrées' : 'tarjetas registradas' }}</p>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
           {{ i18n.t('cards.new') }}
         </button>
@@ -62,7 +63,7 @@ import { TarjetaCredito } from '../../models/interfaces';
 
             <div class="card-actions">
               <button class="btn btn-secondary btn-sm">{{ i18n.t('actions.view') }}</button>
-              <button class="btn btn-primary btn-sm">{{ i18n.t('actions.edit') }}</button>
+              <button class="btn btn-primary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.edit') }}</button>
             </div>
 
             @if (!tarjeta.activo) {
@@ -73,6 +74,13 @@ import { TarjetaCredito } from '../../models/interfaces';
           </div>
         }
       </div>
+
+      <app-tarjeta-modal
+        [isOpen]="isModalOpen"
+        [tarjeta]="selectedTarjeta"
+        (closed)="closeModal()"
+        (saved)="onTarjetaSaved($event)"
+      />
     </div>
   `,
   styles: [`
@@ -246,12 +254,44 @@ import { TarjetaCredito } from '../../models/interfaces';
 export class TarjetasListComponent {
   i18n = inject(I18nService);
 
+  // Modal handling
+  isModalOpen = false;
+  selectedTarjeta?: TarjetaCredito;
+
   tarjetas: TarjetaCredito[] = [
     { id: 1, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '4521', moneda: 'CAD', limiteMensual: 25000, saldoDisponible: 18750, tipoTarjeta: 'Visa Infinite', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 2, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '8832', moneda: 'CAD', limiteMensual: 15000, saldoDisponible: 12340, tipoTarjeta: 'Mastercard World', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 3, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '2156', moneda: 'USD', limiteMensual: 20000, saldoDisponible: 3500, tipoTarjeta: 'Visa Business', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
     { id: 4, nombreTitular: 'TERRA OPERATIONS', ultimos4Digitos: '7744', moneda: 'CAD', limiteMensual: 10000, saldoDisponible: 10000, tipoTarjeta: 'Amex Gold', activo: false, fechaCreacion: new Date(), fechaActualizacion: new Date() }
   ];
+
+  openCreateModal(): void {
+    this.selectedTarjeta = undefined;
+    this.isModalOpen = true;
+  }
+
+  openEditModal(tarjeta: TarjetaCredito): void {
+    this.selectedTarjeta = tarjeta;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedTarjeta = undefined;
+  }
+
+  onTarjetaSaved(tarjeta: TarjetaCredito): void {
+    if (this.selectedTarjeta) {
+      const idx = this.tarjetas.findIndex(t => t.id === tarjeta.id);
+      if (idx >= 0) {
+        this.tarjetas[idx] = tarjeta;
+      }
+    } else {
+      tarjeta.id = this.tarjetas.length ? Math.max(...this.tarjetas.map(t => t.id)) + 1 : 1;
+      this.tarjetas.push(tarjeta);
+    }
+    this.closeModal();
+  }
 
   formatCurrency(amount: number, currency: string = 'CAD'): string {
     return new Intl.NumberFormat(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES', {
