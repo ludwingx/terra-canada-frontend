@@ -1,46 +1,60 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
 import { ThemeService } from '../../../services/theme.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <header class="top-header">
-      <!-- Search -->
-      <div class="header-search">
-        <span class="search-icon">🔍</span>
-        <input 
-          type="text" 
-          class="search-input" 
-          [placeholder]="i18n.t('header.search')"
-          [(ngModel)]="searchQuery"
-        >
-      </div>
-
       <!-- Actions -->
       <div class="header-actions">
-        <!-- Language Toggle -->
-        <div class="language-toggle">
-          <button 
-            class="action-btn"
-            [class.active]="i18n.language() === 'fr'"
-            (click)="i18n.setLanguage('fr')"
-            title="Français"
-          >
-            FR
+        <!-- Language Selector -->
+        <div class="lang-menu">
+          <button class="lang-btn" (click)="toggleLangMenu()" type="button">
+            <span class="flag">
+              @if (i18n.language() === 'fr') {
+                <svg class="flag-icon" viewBox="0 0 3 2" aria-hidden="true" focusable="false">
+                  <rect width="1" height="2" x="0" y="0" fill="#0055A4"></rect>
+                  <rect width="1" height="2" x="1" y="0" fill="#FFFFFF"></rect>
+                  <rect width="1" height="2" x="2" y="0" fill="#EF4135"></rect>
+                </svg>
+              } @else {
+                <svg class="flag-icon" viewBox="0 0 3 2" aria-hidden="true" focusable="false">
+                  <rect width="3" height="2" x="0" y="0" fill="#AA151B"></rect>
+                  <rect width="3" height="1" x="0" y="0.5" fill="#F1BF00"></rect>
+                </svg>
+              }
+            </span>
+            <span class="lang-code">{{ i18n.language() === 'fr' ? 'FR' : 'ES' }}</span>
+            <span class="dropdown-arrow">▼</span>
           </button>
-          <button 
-            class="action-btn"
-            [class.active]="i18n.language() === 'es'"
-            (click)="i18n.setLanguage('es')"
-            title="Español"
-          >
-            ES
-          </button>
+
+          @if (isLangMenuOpen) {
+            <div class="lang-dropdown">
+              <button class="dropdown-item" type="button" (click)="setLanguage('fr')">
+                <span class="flag">
+                  <svg class="flag-icon" viewBox="0 0 3 2" aria-hidden="true" focusable="false">
+                    <rect width="1" height="2" x="0" y="0" fill="#0055A4"></rect>
+                    <rect width="1" height="2" x="1" y="0" fill="#FFFFFF"></rect>
+                    <rect width="1" height="2" x="2" y="0" fill="#EF4135"></rect>
+                  </svg>
+                </span>
+                Français
+              </button>
+              <button class="dropdown-item" type="button" (click)="setLanguage('es')">
+                <span class="flag">
+                  <svg class="flag-icon" viewBox="0 0 3 2" aria-hidden="true" focusable="false">
+                    <rect width="3" height="2" x="0" y="0" fill="#AA151B"></rect>
+                    <rect width="3" height="1" x="0" y="0.5" fill="#F1BF00"></rect>
+                  </svg>
+                </span>
+                Español
+              </button>
+            </div>
+          }
         </div>
 
         <!-- Theme Toggle -->
@@ -88,44 +102,11 @@ import { ThemeService } from '../../../services/theme.service';
       border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       padding: 0 var(--spacing-lg);
       position: sticky;
       top: 0;
       z-index: 50;
-    }
-
-    .header-search {
-      display: flex;
-      align-items: center;
-      background: var(--bg-input);
-      border: 1px solid var(--border-color);
-      border-radius: var(--border-radius);
-      padding: 8px 12px;
-      width: 300px;
-      transition: border-color var(--transition-fast);
-
-      &:focus-within {
-        border-color: var(--primary-color);
-      }
-    }
-
-    .search-icon {
-      margin-right: var(--spacing-sm);
-      font-size: 14px;
-    }
-
-    .search-input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      color: var(--text-primary);
-      font-size: 14px;
-      outline: none;
-
-      &::placeholder {
-        color: var(--text-muted);
-      }
     }
 
     .header-actions {
@@ -134,12 +115,78 @@ import { ThemeService } from '../../../services/theme.service';
       gap: var(--spacing-sm);
     }
 
-    .language-toggle {
+    .lang-menu {
+      position: relative;
+    }
+
+    .lang-btn {
       display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
       background: var(--bg-input);
       border: 1px solid var(--border-color);
       border-radius: var(--border-radius);
+      padding: 6px 10px;
+      height: 40px;
+      min-width: 88px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+
+      color: var(--text-primary);
+
+      &:hover {
+        border-color: var(--primary-color);
+      }
+    }
+
+    .flag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .flag-icon {
+      width: 18px;
+      height: 12px;
+      border-radius: 2px;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+      display: block;
+    }
+
+    .lang-code {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.03em;
+    }
+
+    .lang-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      min-width: 160px;
+      z-index: 100;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lang-dropdown .dropdown-item {
+      width: 100%;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .lang-dropdown .dropdown-item span {
+      display: inline-flex;
+      margin-right: 10px;
     }
 
     .action-btn {
@@ -257,8 +304,17 @@ export class HeaderComponent {
   i18n = inject(I18nService);
   themeService = inject(ThemeService);
   
-  searchQuery = '';
+  isLangMenuOpen = false;
   isUserMenuOpen = false;
+
+  toggleLangMenu(): void {
+    this.isLangMenuOpen = !this.isLangMenuOpen;
+  }
+
+  setLanguage(lang: 'fr' | 'es'): void {
+    this.i18n.setLanguage(lang);
+    this.isLangMenuOpen = false;
+  }
 
   toggleUserMenu(): void {
     this.isUserMenuOpen = !this.isUserMenuOpen;
