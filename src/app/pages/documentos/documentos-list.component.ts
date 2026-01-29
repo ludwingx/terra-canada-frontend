@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { Documento } from '../../models/interfaces';
+import { DocumentoModalComponent } from '../../components/modals/documento-modal/documento-modal.component';
 
 @Component({
   selector: 'app-documentos-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DocumentoModalComponent],
   template: `
     <div class="documentos-page">
       <div class="page-header">
@@ -14,7 +15,7 @@ import { Documento } from '../../models/interfaces';
           <h1>{{ i18n.t('documents.title') }}</h1>
           <p class="header-subtitle">{{ documentos.length }} {{ i18n.language() === 'fr' ? 'documents' : 'documentos' }}</p>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" (click)="openUploadModal()">
           <span>📤</span>
           {{ i18n.t('documents.upload') }}
         </button>
@@ -67,6 +68,12 @@ import { Documento } from '../../models/interfaces';
           </table>
         </div>
       </div>
+
+      <app-documento-modal
+        [isOpen]="isModalOpen"
+        (closed)="closeModal()"
+        (saved)="onDocumentoSaved($event)"
+      />
     </div>
   `,
   styles: [`
@@ -87,11 +94,27 @@ import { Documento } from '../../models/interfaces';
 export class DocumentosListComponent {
   i18n = inject(I18nService);
 
+  isModalOpen = false;
+
   documentos: Documento[] = [
     { id: 1, usuarioId: 1, nombreArchivo: 'factura_voyage_001.pdf', urlDocumento: '/docs/1.pdf', tipoDocumento: 'FACTURA', pagoId: 1, pago: { id: 1, proveedorId: 1, usuarioId: 1, codigoReserva: 'RES-2026-001', monto: 2500, moneda: 'CAD', tipoMedioPago: 'TARJETA', pagado: true, verificado: true, gmailEnviado: true, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, fechaSubida: new Date('2026-01-28') },
     { id: 2, usuarioId: 1, nombreArchivo: 'extracto_enero_2026.pdf', urlDocumento: '/docs/2.pdf', tipoDocumento: 'DOCUMENTO_BANCO', fechaSubida: new Date('2026-01-27') },
     { id: 3, usuarioId: 1, nombreArchivo: 'factura_assurance_003.pdf', urlDocumento: '/docs/3.pdf', tipoDocumento: 'FACTURA', pagoId: 3, pago: { id: 3, proveedorId: 3, usuarioId: 1, codigoReserva: 'RES-2026-003', monto: 950, moneda: 'CAD', tipoMedioPago: 'TARJETA', pagado: false, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, fechaSubida: new Date('2026-01-26') }
   ];
+
+  openUploadModal(): void {
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+  }
+
+  onDocumentoSaved(documento: Documento): void {
+    documento.id = this.documentos.length ? Math.max(...this.documentos.map(d => d.id)) + 1 : 1;
+    this.documentos.unshift(documento);
+    this.closeModal();
+  }
 
   formatDate(date: Date): string {
     return new Date(date).toLocaleDateString(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES');

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
 import { Evento } from '../../models/interfaces';
+import { ModalComponent } from '../../components/shared/modal/modal.component';
 
 @Component({
   selector: 'app-auditoria-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalComponent],
   template: `
     <div class="auditoria-page">
       <div class="page-header">
@@ -48,6 +49,7 @@ import { Evento } from '../../models/interfaces';
                 <th>{{ i18n.t('audit.entity') }}</th>
                 <th>{{ i18n.t('audit.description') }}</th>
                 <th>{{ i18n.t('audit.ip') }}</th>
+                <th>{{ i18n.t('payments.actions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -63,12 +65,54 @@ import { Evento } from '../../models/interfaces';
                   <td>{{ evento.entidadTipo }} #{{ evento.entidadId }}</td>
                   <td>{{ evento.descripcion }}</td>
                   <td><code>{{ evento.ipOrigen || '-' }}</code></td>
+                  <td>
+                    <button class="btn btn-secondary btn-sm" (click)="openViewModal(evento)">
+                      👁️ {{ i18n.t('actions.view') }}
+                    </button>
+                  </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
       </div>
+
+      <app-modal
+        [isOpen]="isModalOpen"
+        [title]="i18n.language() === 'fr' ? 'Détail de l\\'événement' : 'Detalle del evento'"
+        [showFooter]="false"
+        size="md"
+        (closed)="closeModal()"
+      >
+        @if (selectedEvento) {
+          <div class="detail-grid">
+            <div class="detail-row">
+              <span class="detail-label">{{ i18n.t('audit.date') }}</span>
+              <span class="detail-value">{{ formatDateTime(selectedEvento.fechaEvento) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ i18n.t('audit.user') }}</span>
+              <span class="detail-value">{{ selectedEvento.usuario?.nombreCompleto || 'Sistema' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ i18n.t('audit.event') }}</span>
+              <span class="detail-value">{{ getEventLabel(selectedEvento.tipoEvento) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ i18n.t('audit.entity') }}</span>
+              <span class="detail-value">{{ selectedEvento.entidadTipo }} #{{ selectedEvento.entidadId }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ i18n.t('audit.description') }}</span>
+              <span class="detail-value">{{ selectedEvento.descripcion }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ i18n.t('audit.ip') }}</span>
+              <span class="detail-value"><code>{{ selectedEvento.ipOrigen || '-' }}</code></span>
+            </div>
+          </div>
+        }
+      </app-modal>
     </div>
   `,
   styles: [`
@@ -99,12 +143,41 @@ import { Evento } from '../../models/interfaces';
       font-family: monospace;
       font-size: 12px;
     }
+
+    .detail-grid {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: var(--spacing-md);
+      align-items: start;
+    }
+
+    .detail-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .detail-value {
+      font-size: 13px;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
   `]
 })
 export class AuditoriaListComponent {
   i18n = inject(I18nService);
   filterType = '';
   filterDate = '';
+
+  isModalOpen = false;
+  selectedEvento?: Evento;
 
   eventos: Evento[] = [
     { id: 1, usuarioId: 1, usuario: { id: 1, nombreUsuario: 'admin', correo: 'a@a.com', nombreCompleto: 'Jean Dupont', rolId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, tipoEvento: 'CREAR', entidadTipo: 'Pago', entidadId: 6, descripcion: 'Pago RES-2026-006 creado', ipOrigen: '192.168.1.100', fechaEvento: new Date() },
@@ -116,6 +189,16 @@ export class AuditoriaListComponent {
 
   get filteredEventos(): Evento[] {
     return this.eventos.filter(e => !this.filterType || e.tipoEvento === this.filterType);
+  }
+
+  openViewModal(evento: Evento): void {
+    this.selectedEvento = evento;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedEvento = undefined;
   }
 
   formatDateTime(date: Date): string {

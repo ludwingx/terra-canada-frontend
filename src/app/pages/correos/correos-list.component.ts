@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { EnvioCorreo } from '../../models/interfaces';
+import { CorreoModalComponent } from '../../components/modals/correo-modal/correo-modal.component';
 
 @Component({
   selector: 'app-correos-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CorreoModalComponent],
   template: `
     <div class="correos-page">
       <div class="page-header">
@@ -14,7 +15,7 @@ import { EnvioCorreo } from '../../models/interfaces';
           <h1>{{ i18n.t('emails.title') }}</h1>
           <p class="header-subtitle">{{ getPendingCount() }} {{ i18n.language() === 'fr' ? 'en attente' : 'pendientes' }}</p>
         </div>
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" (click)="openComposeModal()">
           <span>✏️</span>
           {{ i18n.t('emails.compose') }}
         </button>
@@ -61,9 +62,9 @@ import { EnvioCorreo } from '../../models/interfaces';
                   </td>
                   <td>
                     @if (correo.estado === 'BORRADOR') {
-                      <button class="btn btn-primary btn-sm">{{ i18n.t('actions.send') }}</button>
+                      <button class="btn btn-primary btn-sm" (click)="openEditModal(correo)">{{ i18n.t('actions.send') }}</button>
                     } @else {
-                      <button class="btn btn-secondary btn-sm">{{ i18n.t('actions.view') }}</button>
+                      <button class="btn btn-secondary btn-sm" (click)="openViewModal(correo)">{{ i18n.t('actions.view') }}</button>
                     }
                   </td>
                 </tr>
@@ -76,6 +77,13 @@ import { EnvioCorreo } from '../../models/interfaces';
           </table>
         </div>
       </div>
+
+      <app-correo-modal
+        [isOpen]="isModalOpen"
+        [correo]="selectedCorreo"
+        (closed)="closeModal()"
+        (saved)="onCorreoSaved($event)"
+      />
     </div>
   `,
   styles: [`
@@ -106,11 +114,45 @@ export class CorreosListComponent {
   i18n = inject(I18nService);
   activeTab: 'pending' | 'sent' = 'pending';
 
+  isModalOpen = false;
+  selectedCorreo?: EnvioCorreo;
+
   correos: EnvioCorreo[] = [
     { id: 1, proveedorId: 1, proveedor: { id: 1, nombre: 'Voyage Excellence', servicioId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, correoSeleccionado: 'contact@voyage-excellence.ca', usuarioEnvioId: 1, asunto: 'Notification de paiements - Janvier 2026', cuerpo: '', estado: 'BORRADOR', cantidadPagos: 3, montoTotal: 8500.00, fechaGeneracion: new Date() },
     { id: 2, proveedorId: 2, proveedor: { id: 2, nombre: 'Canada Tours', servicioId: 2, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, correoSeleccionado: 'info@canadatours.com', usuarioEnvioId: 1, asunto: 'Notification de paiements - Janvier 2026', cuerpo: '', estado: 'BORRADOR', cantidadPagos: 2, montoTotal: 4200.00, fechaGeneracion: new Date() },
     { id: 3, proveedorId: 3, proveedor: { id: 3, nombre: 'Assurance Plus', servicioId: 3, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, correoSeleccionado: 'souscription@assuranceplus.ca', usuarioEnvioId: 1, asunto: 'Notification de paiements - Décembre 2025', cuerpo: '', estado: 'ENVIADO', cantidadPagos: 5, montoTotal: 12300.00, fechaGeneracion: new Date('2025-12-28'), fechaEnvio: new Date('2025-12-30') }
   ];
+
+  openComposeModal(): void {
+    this.selectedCorreo = undefined;
+    this.isModalOpen = true;
+  }
+
+  openEditModal(correo: EnvioCorreo): void {
+    this.selectedCorreo = correo;
+    this.isModalOpen = true;
+  }
+
+  openViewModal(correo: EnvioCorreo): void {
+    this.selectedCorreo = correo;
+    this.isModalOpen = true;
+  }
+
+  closeModal(): void {
+    this.isModalOpen = false;
+    this.selectedCorreo = undefined;
+  }
+
+  onCorreoSaved(correo: EnvioCorreo): void {
+    if (this.selectedCorreo) {
+      const idx = this.correos.findIndex(c => c.id === correo.id);
+      if (idx >= 0) this.correos[idx] = correo;
+    } else {
+      correo.id = this.correos.length ? Math.max(...this.correos.map(c => c.id)) + 1 : 1;
+      this.correos.unshift(correo);
+    }
+    this.closeModal();
+  }
 
   get filteredCorreos(): EnvioCorreo[] {
     return this.correos.filter(c => 
