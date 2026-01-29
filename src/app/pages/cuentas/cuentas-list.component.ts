@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { CuentaBancaria } from '../../models/interfaces';
 import { CuentaModalComponent } from '../../components/modals/cuenta-modal/cuenta-modal.component';
+import { CuentasService } from '../../services/cuentas.service';
 
 @Component({
   selector: 'app-cuentas-list',
@@ -88,18 +89,35 @@ import { CuentaModalComponent } from '../../components/modals/cuenta-modal/cuent
     }
   `]
 })
-export class CuentasListComponent {
+export class CuentasListComponent implements OnInit {
   i18n = inject(I18nService);
+  private cuentasService = inject(CuentasService);
+  
+  loading = false;
 
   // Modal handling
   isModalOpen = false;
   selectedCuenta?: CuentaBancaria;
 
-  cuentas: CuentaBancaria[] = [
-    { id: 1, nombreBanco: 'Banque Nationale', nombreCuenta: 'Compte Opérations', ultimos4Digitos: '3421', moneda: 'CAD', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 2, nombreBanco: 'TD Bank', nombreCuenta: 'Business USD', ultimos4Digitos: '8876', moneda: 'USD', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 3, nombreBanco: 'Desjardins', nombreCuenta: 'Épargne Entreprise', ultimos4Digitos: '2245', moneda: 'CAD', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }
-  ];
+  cuentas: CuentaBancaria[] = [];
+
+  ngOnInit(): void {
+    this.loadCuentas();
+  }
+
+  loadCuentas(): void {
+    this.loading = true;
+    this.cuentasService.getCuentas().subscribe({
+      next: (cuentas) => {
+        this.cuentas = cuentas;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando cuentas:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   openCreateModal(): void {
     this.selectedCuenta = undefined;
@@ -117,15 +135,7 @@ export class CuentasListComponent {
   }
 
   onCuentaSaved(cuenta: CuentaBancaria): void {
-    if (this.selectedCuenta) {
-      const idx = this.cuentas.findIndex(c => c.id === cuenta.id);
-      if (idx >= 0) {
-        this.cuentas[idx] = cuenta;
-      }
-    } else {
-      cuenta.id = this.cuentas.length ? Math.max(...this.cuentas.map(c => c.id)) + 1 : 1;
-      this.cuentas.push(cuenta);
-    }
+    this.loadCuentas();
     this.closeModal();
   }
 }

@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { EnvioCorreo } from '../../models/interfaces';
 import { ModalComponent } from '../../components/shared/modal/modal.component';
+import { CorreosService } from '../../services/correos.service';
 
 @Component({
   selector: 'app-correos-list',
@@ -209,145 +210,34 @@ import { ModalComponent } from '../../components/shared/modal/modal.component';
     }
   `]
 })
-export class CorreosListComponent {
+export class CorreosListComponent implements OnInit {
   i18n = inject(I18nService);
+  private correosService = inject(CorreosService);
   activeTab: 'pending' | 'sent' = 'pending';
 
   isModalOpen = false;
+  loading = false;
   selectedCorreo?: EnvioCorreo;
 
-  correos: EnvioCorreo[] = [
-    {
-      id: 1,
-      proveedorId: 1,
-      proveedor: { id: 1, nombre: 'Voyage Excellence', servicioId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-      correoSeleccionado: 'contact@voyage-excellence.ca',
-      usuarioEnvioId: 1,
-      asunto: 'Notification de paiements - Janvier 2026',
-      cuerpo: '',
-      estado: 'BORRADOR',
-      cantidadPagos: 2,
-      montoTotal: 5700.0,
-      fechaGeneracion: new Date(),
-      detalles: [
-        {
-          id: 11,
-          envioId: 1,
-          pagoId: 1,
-          pago: {
-            id: 1,
-            proveedorId: 1,
-            usuarioId: 1,
-            codigoReserva: 'RES-2026-001',
-            monto: 2500,
-            moneda: 'CAD',
-            tipoMedioPago: 'TARJETA',
-            pagado: true,
-            verificado: true,
-            gmailEnviado: false,
-            activo: true,
-            fechaCreacion: new Date('2026-01-28'),
-            fechaActualizacion: new Date('2026-01-28')
-          },
-          fechaCreacion: new Date()
-        },
-        {
-          id: 12,
-          envioId: 1,
-          pagoId: 4,
-          pago: {
-            id: 4,
-            proveedorId: 1,
-            usuarioId: 1,
-            codigoReserva: 'RES-2026-004',
-            monto: 3200,
-            moneda: 'USD',
-            tipoMedioPago: 'TARJETA',
-            pagado: true,
-            verificado: true,
-            gmailEnviado: false,
-            activo: true,
-            fechaCreacion: new Date('2026-01-25'),
-            fechaActualizacion: new Date('2026-01-25')
-          },
-          fechaCreacion: new Date()
-        }
-      ]
-    },
-    {
-      id: 2,
-      proveedorId: 2,
-      proveedor: { id: 2, nombre: 'Canada Tours', servicioId: 2, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-      correoSeleccionado: 'info@canadatours.com',
-      usuarioEnvioId: 1,
-      asunto: 'Notification de paiements - Janvier 2026',
-      cuerpo: '',
-      estado: 'BORRADOR',
-      cantidadPagos: 1,
-      montoTotal: 1800.0,
-      fechaGeneracion: new Date(),
-      detalles: [
-        {
-          id: 21,
-          envioId: 2,
-          pagoId: 2,
-          pago: {
-            id: 2,
-            proveedorId: 2,
-            usuarioId: 1,
-            codigoReserva: 'RES-2026-002',
-            monto: 1800,
-            moneda: 'CAD',
-            tipoMedioPago: 'CUENTA_BANCARIA',
-            pagado: true,
-            verificado: true,
-            gmailEnviado: false,
-            activo: true,
-            fechaCreacion: new Date('2026-01-27'),
-            fechaActualizacion: new Date('2026-01-27')
-          },
-          fechaCreacion: new Date()
-        }
-      ]
-    },
-    {
-      id: 3,
-      proveedorId: 3,
-      proveedor: { id: 3, nombre: 'Assurance Plus', servicioId: 3, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-      correoSeleccionado: 'souscription@assuranceplus.ca',
-      usuarioEnvioId: 1,
-      asunto: 'Notification de paiements - Décembre 2025',
-      cuerpo: '',
-      estado: 'ENVIADO',
-      cantidadPagos: 1,
-      montoTotal: 950.0,
-      fechaGeneracion: new Date('2025-12-28'),
-      fechaEnvio: new Date('2025-12-30'),
-      detalles: [
-        {
-          id: 31,
-          envioId: 3,
-          pagoId: 3,
-          pago: {
-            id: 3,
-            proveedorId: 3,
-            usuarioId: 1,
-            codigoReserva: 'RES-2026-003',
-            monto: 950,
-            moneda: 'CAD',
-            tipoMedioPago: 'TARJETA',
-            pagado: true,
-            verificado: true,
-            gmailEnviado: true,
-            activo: true,
-            fechaCreacion: new Date('2025-12-26'),
-            fechaActualizacion: new Date('2025-12-26')
-          },
-          fechaCreacion: new Date('2025-12-28')
-        }
-      ]
-    }
-  ];
+  correos: EnvioCorreo[] = [];
+
+  ngOnInit(): void {
+    this.loadCorreos();
+  }
+
+  loadCorreos(): void {
+    this.loading = true;
+    this.correosService.getCorreos().subscribe({
+      next: (correos) => {
+        this.correos = correos;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando correos:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   openDetailModal(correo: EnvioCorreo): void {
     this.selectedCorreo = correo;

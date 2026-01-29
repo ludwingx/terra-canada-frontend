@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
 import { Proveedor } from '../../models/interfaces';
 import { ProveedorModalComponent } from '../../components/modals/proveedor-modal/proveedor-modal.component';
+import { ProveedoresService } from '../../services/proveedores.service';
 
 @Component({
   selector: 'app-proveedores-list',
@@ -240,33 +241,33 @@ import { ProveedorModalComponent } from '../../components/modals/proveedor-modal
     }
   `]
 })
-export class ProveedoresListComponent {
+export class ProveedoresListComponent implements OnInit {
   i18n = inject(I18nService);
+  private proveedoresService = inject(ProveedoresService);
   
   searchQuery = '';
   filterService = '';
+  loading = false;
 
-  proveedores: Proveedor[] = [
-    { id: 1, nombre: 'Voyage Excellence', servicioId: 1, servicio: { id: 1, nombre: 'Hotels', activo: true, fechaCreacion: new Date() }, lenguaje: 'Français', telefono: '+1 514 555-0101', activo: true, correos: [
-      { id: 1, proveedorId: 1, correo: 'contact@voyage-excellence.ca', principal: true, activo: true, fechaCreacion: new Date() },
-      { id: 2, proveedorId: 1, correo: 'reservations@voyage-excellence.ca', principal: false, activo: true, fechaCreacion: new Date() }
-    ], fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 2, nombre: 'Canada Tours', servicioId: 2, servicio: { id: 2, nombre: 'Excursion', activo: true, fechaCreacion: new Date() }, lenguaje: 'English', telefono: '+1 416 555-0202', activo: true, correos: [
-      { id: 3, proveedorId: 2, correo: 'info@canadatours.com', principal: true, activo: true, fechaCreacion: new Date() }
-    ], fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 3, nombre: 'Assurance Plus', servicioId: 3, servicio: { id: 3, nombre: 'Assurance', activo: true, fechaCreacion: new Date() }, lenguaje: 'Français', telefono: '+1 514 555-0303', activo: true, correos: [
-      { id: 4, proveedorId: 3, correo: 'souscription@assuranceplus.ca', principal: true, activo: true, fechaCreacion: new Date() },
-      { id: 5, proveedorId: 3, correo: 'reclamations@assuranceplus.ca', principal: false, activo: true, fechaCreacion: new Date() },
-      { id: 6, proveedorId: 3, correo: 'support@assuranceplus.ca', principal: false, activo: true, fechaCreacion: new Date() }
-    ], fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 4, nombre: 'Location Auto QC', servicioId: 4, servicio: { id: 4, nombre: 'Car rental', activo: true, fechaCreacion: new Date() }, lenguaje: 'Français', activo: true, correos: [
-      { id: 7, proveedorId: 4, correo: 'reservations@locationautoqc.ca', principal: true, activo: true, fechaCreacion: new Date() }
-    ], fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 5, nombre: 'Guides Montreal', servicioId: 5, servicio: { id: 5, nombre: 'Guides', activo: true, fechaCreacion: new Date() }, lenguaje: 'Français/English', telefono: '+1 514 555-0505', activo: true, correos: [
-      { id: 8, proveedorId: 5, correo: 'contact@guidesmontreal.ca', principal: true, activo: true, fechaCreacion: new Date() },
-      { id: 9, proveedorId: 5, correo: 'groups@guidesmontreal.ca', principal: false, activo: true, fechaCreacion: new Date() }
-    ], fechaCreacion: new Date(), fechaActualizacion: new Date() }
-  ];
+  proveedores: Proveedor[] = [];
+
+  ngOnInit(): void {
+    this.loadProveedores();
+  }
+
+  loadProveedores(): void {
+    this.loading = true;
+    this.proveedoresService.getProveedores().subscribe({
+      next: (proveedores) => {
+        this.proveedores = proveedores;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando proveedores:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   get filteredProveedores(): Proveedor[] {
     return this.proveedores.filter(p => {
@@ -304,17 +305,7 @@ export class ProveedoresListComponent {
   }
 
   onProveedorSaved(proveedor: Proveedor): void {
-    if (this.selectedProveedor) {
-      // Editar existente
-      const idx = this.proveedores.findIndex(p => p.id === proveedor.id);
-      if (idx >= 0) {
-        this.proveedores[idx] = proveedor;
-      }
-    } else {
-      // Crear nuevo
-      proveedor.id = Math.max(...this.proveedores.map(p => p.id)) + 1;
-      this.proveedores.push(proveedor);
-    }
+    this.loadProveedores();
     this.closeModal();
   }
 }

@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
 import { Cliente } from '../../models/interfaces';
 import { ClienteModalComponent } from '../../components/modals/cliente-modal/cliente-modal.component';
+import { ClientesService } from '../../services/clientes.service';
 
 @Component({
   selector: 'app-clientes-list',
@@ -123,22 +124,35 @@ import { ClienteModalComponent } from '../../components/modals/cliente-modal/cli
     }
   `]
 })
-export class ClientesListComponent {
+export class ClientesListComponent implements OnInit {
   i18n = inject(I18nService);
+  private clientesService = inject(ClientesService);
   searchQuery = '';
+  loading = false;
 
   // Modal handling
   isModalOpen = false;
   selectedCliente?: Cliente;
 
-  clientes: Cliente[] = [
-    { id: 1, nombre: 'Hôtel Le Germain', ubicacion: 'Montréal, QC', telefono: '+1 514 555-1001', correo: 'reservations@legermain.com', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 2, nombre: 'Fairmont Château Frontenac', ubicacion: 'Québec City, QC', telefono: '+1 418 555-2002', correo: 'info@frontenac.com', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 3, nombre: 'Delta Hotels by Marriott', ubicacion: 'Toronto, ON', correo: 'groups@deltahotels.com', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 4, nombre: 'Auberge Saint-Antoine', ubicacion: 'Québec City, QC', telefono: '+1 418 555-4004', correo: 'reservation@saint-antoine.com', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 5, nombre: 'Le Mount Stephen', ubicacion: 'Montréal, QC', correo: 'concierge@lemountstephen.com', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 6, nombre: 'Château Laurier', ubicacion: 'Ottawa, ON', telefono: '+1 613 555-6006', activo: false, fechaCreacion: new Date(), fechaActualizacion: new Date() }
-  ];
+  clientes: Cliente[] = [];
+
+  ngOnInit(): void {
+    this.loadClientes();
+  }
+
+  loadClientes(): void {
+    this.loading = true;
+    this.clientesService.getClientes().subscribe({
+      next: (clientes) => {
+        this.clientes = clientes;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando clientes:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   openCreateModal(): void {
     this.selectedCliente = undefined;
@@ -156,15 +170,7 @@ export class ClientesListComponent {
   }
 
   onClienteSaved(cliente: Cliente): void {
-    if (this.selectedCliente) {
-      const idx = this.clientes.findIndex(c => c.id === cliente.id);
-      if (idx >= 0) {
-        this.clientes[idx] = cliente;
-      }
-    } else {
-      cliente.id = this.clientes.length ? Math.max(...this.clientes.map(c => c.id)) + 1 : 1;
-      this.clientes.push(cliente);
-    }
+    this.loadClientes();
     this.closeModal();
   }
 

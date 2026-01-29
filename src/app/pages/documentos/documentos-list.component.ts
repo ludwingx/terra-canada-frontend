@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { Documento } from '../../models/interfaces';
 import { DocumentoModalComponent } from '../../components/modals/documento-modal/documento-modal.component';
+import { DocumentosService } from '../../services/documentos.service';
 
 @Component({
   selector: 'app-documentos-list',
@@ -91,16 +92,31 @@ import { DocumentoModalComponent } from '../../components/modals/documento-modal
     }
   `]
 })
-export class DocumentosListComponent {
+export class DocumentosListComponent implements OnInit {
   i18n = inject(I18nService);
+  private documentosService = inject(DocumentosService);
 
   isModalOpen = false;
+  loading = false;
+  documentos: Documento[] = [];
 
-  documentos: Documento[] = [
-    { id: 1, usuarioId: 1, nombreArchivo: 'factura_voyage_001.pdf', urlDocumento: '/docs/1.pdf', tipoDocumento: 'FACTURA', pagoId: 1, pago: { id: 1, proveedorId: 1, usuarioId: 1, codigoReserva: 'RES-2026-001', monto: 2500, moneda: 'CAD', tipoMedioPago: 'TARJETA', pagado: true, verificado: true, gmailEnviado: true, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, fechaSubida: new Date('2026-01-28') },
-    { id: 2, usuarioId: 1, nombreArchivo: 'extracto_enero_2026.pdf', urlDocumento: '/docs/2.pdf', tipoDocumento: 'DOCUMENTO_BANCO', fechaSubida: new Date('2026-01-27') },
-    { id: 3, usuarioId: 1, nombreArchivo: 'factura_assurance_003.pdf', urlDocumento: '/docs/3.pdf', tipoDocumento: 'FACTURA', pagoId: 3, pago: { id: 3, proveedorId: 3, usuarioId: 1, codigoReserva: 'RES-2026-003', monto: 950, moneda: 'CAD', tipoMedioPago: 'TARJETA', pagado: false, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, fechaSubida: new Date('2026-01-26') }
-  ];
+  ngOnInit(): void {
+    this.loadDocumentos();
+  }
+
+  loadDocumentos(): void {
+    this.loading = true;
+    this.documentosService.getDocumentos().subscribe({
+      next: (docs) => {
+        this.documentos = docs;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando documentos:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   openUploadModal(): void {
     this.isModalOpen = true;
@@ -111,8 +127,7 @@ export class DocumentosListComponent {
   }
 
   onDocumentoSaved(documento: Documento): void {
-    documento.id = this.documentos.length ? Math.max(...this.documentos.map(d => d.id)) + 1 : 1;
-    this.documentos.unshift(documento);
+    this.loadDocumentos();
     this.closeModal();
   }
 

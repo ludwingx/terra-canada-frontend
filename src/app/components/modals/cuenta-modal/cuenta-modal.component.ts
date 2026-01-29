@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Input, Output, inject, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { CuentaBancaria, TipoMoneda } from '../../../models/interfaces';
+import { CuentasService } from '../../../services/cuentas.service';
 
 @Component({
   selector: 'app-cuenta-modal',
@@ -116,8 +117,9 @@ import { CuentaBancaria, TipoMoneda } from '../../../models/interfaces';
     }
   `]
 })
-export class CuentaModalComponent implements OnInit {
+export class CuentaModalComponent implements OnInit, OnChanges {
   i18n = inject(I18nService);
+  private cuentasService = inject(CuentasService);
 
   @Input() isOpen = false;
   @Input() cuenta?: CuentaBancaria;
@@ -140,6 +142,16 @@ export class CuentaModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['cuenta'] || (changes['isOpen'] && this.isOpen)) {
+      this.initForm();
+    }
+  }
+
+  private initForm(): void {
     if (this.cuenta) {
       this.form = {
         nombreBanco: this.cuenta.nombreBanco,
@@ -148,6 +160,8 @@ export class CuentaModalComponent implements OnInit {
         moneda: this.cuenta.moneda,
         activo: this.cuenta.activo
       };
+    } else {
+      this.resetForm();
     }
   }
 
@@ -169,22 +183,25 @@ export class CuentaModalComponent implements OnInit {
 
     this.loading = true;
 
-    const cuenta: CuentaBancaria = {
-      id: this.cuenta?.id || 0,
-      nombreBanco: this.form.nombreBanco,
-      nombreCuenta: this.form.nombreCuenta,
-      ultimos4Digitos: this.form.ultimos4Digitos,
-      moneda: this.form.moneda,
-      activo: this.form.activo,
-      fechaCreacion: this.cuenta?.fechaCreacion || new Date(),
-      fechaActualizacion: new Date()
+    const cuentaData: any = {
+      nombre_banco: this.form.nombreBanco,
+      nombre_cuenta: this.form.nombreCuenta,
+      ultimos_4_digitos: this.form.ultimos4Digitos,
+      moneda: this.form.moneda
     };
 
-    setTimeout(() => {
-      this.loading = false;
-      this.saved.emit(cuenta);
-      this.resetForm();
-    }, 500);
+    // DOCUMENTACION_ENDPOINTS.md solo tiene POST /cuentas.
+    this.cuentasService.createCuenta(cuentaData).subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.saved.emit(res);
+        this.resetForm();
+      },
+      error: (err) => {
+        console.error('Error guardando cuenta:', err);
+        this.loading = false;
+      }
+    });
   }
 
   private resetForm(): void {

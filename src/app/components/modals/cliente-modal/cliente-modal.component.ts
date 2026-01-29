@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Input, Output, inject, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { Cliente } from '../../../models/interfaces';
+import { ClientesService } from '../../../services/clientes.service';
 
 @Component({
   selector: 'app-cliente-modal',
@@ -114,8 +115,9 @@ import { Cliente } from '../../../models/interfaces';
     }
   `]
 })
-export class ClienteModalComponent implements OnInit {
+export class ClienteModalComponent implements OnInit, OnChanges {
   i18n = inject(I18nService);
+  private clientesService = inject(ClientesService);
 
   @Input() isOpen = false;
   @Input() cliente?: Cliente;
@@ -138,6 +140,16 @@ export class ClienteModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['cliente'] || (changes['isOpen'] && this.isOpen)) {
+      this.initForm();
+    }
+  }
+
+  private initForm(): void {
     if (this.cliente) {
       this.form = {
         nombre: this.cliente.nombre,
@@ -146,6 +158,8 @@ export class ClienteModalComponent implements OnInit {
         telefono: this.cliente.telefono || '',
         activo: this.cliente.activo
       };
+    } else {
+      this.resetForm();
     }
   }
 
@@ -163,22 +177,26 @@ export class ClienteModalComponent implements OnInit {
 
     this.loading = true;
 
-    const cliente: Cliente = {
-      id: this.cliente?.id || 0,
+    const clienteData: any = {
       nombre: this.form.nombre,
-      ubicacion: this.form.ubicacion || undefined,
-      correo: this.form.correo || undefined,
-      telefono: this.form.telefono || undefined,
-      activo: this.form.activo,
-      fechaCreacion: this.cliente?.fechaCreacion || new Date(),
-      fechaActualizacion: new Date()
+      ubicacion: this.form.ubicacion || null,
+      correo: this.form.correo || null,
+      telefono: this.form.telefono || null
     };
 
-    setTimeout(() => {
-      this.loading = false;
-      this.saved.emit(cliente);
-      this.resetForm();
-    }, 500);
+    // DOCUMENTACION_ENDPOINTS.md solo tiene POST /clientes.
+    // Usaremos create como fallback para ambos casos.
+    this.clientesService.createCliente(clienteData).subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.saved.emit(res);
+        this.resetForm();
+      },
+      error: (err) => {
+        console.error('Error guardando cliente:', err);
+        this.loading = false;
+      }
+    });
   }
 
   private resetForm(): void {

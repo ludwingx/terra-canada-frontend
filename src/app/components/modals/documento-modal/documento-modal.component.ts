@@ -1,16 +1,11 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { Documento, TipoDocumento, Pago } from '../../../models/interfaces';
-
-// Pagos de ejemplo para asociar
-const PAGOS: Pago[] = [
-  { id: 1, proveedorId: 1, usuarioId: 1, codigoReserva: 'RES-2026-001', monto: 2500, moneda: 'CAD', tipoMedioPago: 'TARJETA', pagado: true, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 2, proveedorId: 2, usuarioId: 1, codigoReserva: 'RES-2026-002', monto: 1800, moneda: 'USD', tipoMedioPago: 'CUENTA_BANCARIA', pagado: true, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 3, proveedorId: 3, usuarioId: 1, codigoReserva: 'RES-2026-003', monto: 950, moneda: 'CAD', tipoMedioPago: 'TARJETA', pagado: false, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-];
+import { DocumentosService } from '../../../services/documentos.service';
+import { PagosService } from '../../../services/pagos.service';
 
 @Component({
   selector: 'app-documento-modal',
@@ -242,8 +237,10 @@ const PAGOS: Pago[] = [
     }
   `]
 })
-export class DocumentoModalComponent {
+export class DocumentoModalComponent implements OnInit {
   i18n = inject(I18nService);
+  private documentosService = inject(DocumentosService);
+  private pagosService = inject(PagosService);
 
   @Input() isOpen = false;
 
@@ -251,7 +248,18 @@ export class DocumentoModalComponent {
   @Output() saved = new EventEmitter<Documento>();
 
   loading = false;
-  pagos = PAGOS;
+  pagos: Pago[] = [];
+
+  ngOnInit(): void {
+    this.loadPagos();
+  }
+
+  loadPagos(): void {
+    this.pagosService.getPagos().subscribe({
+      next: (pagos) => this.pagos = pagos,
+      error: (err) => console.error('Error cargando pagos:', err)
+    });
+  }
 
   form = {
     tipoDocumento: 'FACTURA' as TipoDocumento,
@@ -311,22 +319,21 @@ export class DocumentoModalComponent {
 
     this.loading = true;
 
-    const documento: Documento = {
-      id: 0,
-      usuarioId: 1, // Usuario actual
-      pagoId: this.form.pagoId || undefined,
-      pago: this.form.pagoId ? this.pagos.find(p => p.id === this.form.pagoId) : undefined,
-      nombreArchivo: this.form.file.name,
-      urlDocumento: `/documents/${Date.now()}_${this.form.file.name}`,
-      tipoDocumento: this.form.tipoDocumento,
-      fechaSubida: new Date()
-    };
-
-    setTimeout(() => {
-      this.loading = false;
-      this.saved.emit(documento);
-      this.resetForm();
-    }, 800);
+    this.documentosService.subirDocumento(
+      this.form.file,
+      this.form.tipoDocumento,
+      this.form.pagoId || undefined
+    ).subscribe({
+      next: (doc) => {
+        this.loading = false;
+        this.saved.emit(doc);
+        this.resetForm();
+      },
+      error: (err) => {
+        console.error('Error subiendo documento:', err);
+        this.loading = false;
+      }
+    });
   }
 
   private resetForm(): void {

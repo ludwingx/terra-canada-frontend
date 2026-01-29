@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
 import { Pago } from '../../models/interfaces';
 import { PagoModalComponent } from '../../components/modals/pago-modal/pago-modal.component';
+import { PagosService } from '../../services/pagos.service';
 
 @Component({
   selector: 'app-pagos-list',
@@ -190,25 +191,41 @@ import { PagoModalComponent } from '../../components/modals/pago-modal/pago-moda
     }
   `]
 })
-export class PagosListComponent {
+export class PagosListComponent implements OnInit {
   i18n = inject(I18nService);
+  private pagosService = inject(PagosService);
   
   searchQuery = '';
   filterStatus = '';
   filterMethod = '';
+  loading = false;
 
   // Modal handling
   isModalOpen = false;
   selectedPago?: Pago;
 
-  pagos: Pago[] = [
-    { id: 1, proveedorId: 1, proveedor: { id: 1, nombre: 'Voyage Excellence', servicioId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-001', monto: 2500.00, moneda: 'CAD', tipoMedioPago: 'TARJETA', tarjeta: { id: 1, nombreTitular: 'Terra Canada', ultimos4Digitos: '4521', moneda: 'CAD', limiteMensual: 10000, saldoDisponible: 7500, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, pagado: true, verificado: true, gmailEnviado: true, activo: true, fechaCreacion: new Date('2026-01-28'), fechaActualizacion: new Date() },
-    { id: 2, proveedorId: 2, proveedor: { id: 2, nombre: 'Canada Tours', servicioId: 2, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-002', monto: 1800.00, moneda: 'USD', tipoMedioPago: 'CUENTA_BANCARIA', pagado: true, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date('2026-01-27'), fechaActualizacion: new Date() },
-    { id: 3, proveedorId: 3, proveedor: { id: 3, nombre: 'Assurance Plus', servicioId: 3, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-003', monto: 950.00, moneda: 'CAD', tipoMedioPago: 'TARJETA', tarjeta: { id: 2, nombreTitular: 'Terra Canada', ultimos4Digitos: '8832', moneda: 'CAD', limiteMensual: 15000, saldoDisponible: 12000, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, pagado: false, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date('2026-01-26'), fechaActualizacion: new Date() },
-    { id: 4, proveedorId: 1, proveedor: { id: 1, nombre: 'Voyage Excellence', servicioId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-004', monto: 3200.00, moneda: 'USD', tipoMedioPago: 'TARJETA', tarjeta: { id: 1, nombreTitular: 'Terra Canada', ultimos4Digitos: '4521', moneda: 'USD', limiteMensual: 10000, saldoDisponible: 5000, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, pagado: true, verificado: true, gmailEnviado: true, activo: true, fechaCreacion: new Date('2026-01-25'), fechaActualizacion: new Date() },
-    { id: 5, proveedorId: 4, proveedor: { id: 4, nombre: 'Location Auto QC', servicioId: 4, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-005', monto: 780.00, moneda: 'CAD', tipoMedioPago: 'CUENTA_BANCARIA', pagado: true, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date('2026-01-24'), fechaActualizacion: new Date() },
-    { id: 6, proveedorId: 5, proveedor: { id: 5, nombre: 'Guides Montreal', servicioId: 5, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-006', monto: 1250.00, moneda: 'CAD', tipoMedioPago: 'TARJETA', tarjeta: { id: 2, nombreTitular: 'Terra Canada', ultimos4Digitos: '8832', moneda: 'CAD', limiteMensual: 15000, saldoDisponible: 10750, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, pagado: false, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date('2026-01-23'), fechaActualizacion: new Date() }
-  ];
+  pagos: Pago[] = [];
+
+  ngOnInit(): void {
+    this.loadPagos();
+  }
+
+  loadPagos(): void {
+    this.loading = true;
+    const filters: any = {};
+    if (this.filterStatus) filters.estado = this.filterStatus.toUpperCase();
+    
+    this.pagosService.getPagos(filters).subscribe({
+      next: (pagos) => {
+        this.pagos = pagos;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando pagos:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   openCreateModal(): void {
     this.selectedPago = undefined;
@@ -226,16 +243,17 @@ export class PagosListComponent {
   }
 
   onPagoSaved(pago: Pago): void {
-    if (this.selectedPago) {
-      const idx = this.pagos.findIndex(p => p.id === pago.id);
-      if (idx >= 0) {
-        this.pagos[idx] = pago;
-      }
-    } else {
-      pago.id = this.pagos.length ? Math.max(...this.pagos.map(p => p.id)) + 1 : 1;
-      this.pagos.push(pago);
-    }
+    this.loadPagos();
     this.closeModal();
+  }
+
+  deletePago(id: number): void {
+    if (confirm(this.i18n.language() === 'fr' ? 'Êtes-vous sûr de vouloir supprimer ce paiement ?' : '¿Está seguro de que desea eliminar este pago?')) {
+      this.pagosService.cancelarPago(id).subscribe({
+        next: () => this.loadPagos(),
+        error: (err) => console.error('Error eliminando pago:', err)
+      });
+    }
   }
 
   get filteredPagos(): Pago[] {

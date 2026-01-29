@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Input, Output, inject, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { TarjetaCredito, TipoMoneda } from '../../../models/interfaces';
+import { TarjetasService } from '../../../services/tarjetas.service';
 
 @Component({
   selector: 'app-tarjeta-modal',
@@ -174,8 +175,9 @@ import { TarjetaCredito, TipoMoneda } from '../../../models/interfaces';
     }
   `]
 })
-export class TarjetaModalComponent implements OnInit {
+export class TarjetaModalComponent implements OnInit, OnChanges {
   i18n = inject(I18nService);
+  private tarjetasService = inject(TarjetasService);
 
   @Input() isOpen = false;
   @Input() tarjeta?: TarjetaCredito;
@@ -200,6 +202,16 @@ export class TarjetaModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['tarjeta'] || (changes['isOpen'] && this.isOpen)) {
+      this.initForm();
+    }
+  }
+
+  private initForm(): void {
     if (this.tarjeta) {
       this.form = {
         nombreTitular: this.tarjeta.nombreTitular,
@@ -210,6 +222,8 @@ export class TarjetaModalComponent implements OnInit {
         saldoDisponible: this.tarjeta.saldoDisponible,
         activo: this.tarjeta.activo
       };
+    } else {
+      this.resetForm();
     }
   }
 
@@ -231,24 +245,30 @@ export class TarjetaModalComponent implements OnInit {
 
     this.loading = true;
 
-    const tarjeta: TarjetaCredito = {
-      id: this.tarjeta?.id || 0,
-      nombreTitular: this.form.nombreTitular.toUpperCase(),
-      ultimos4Digitos: this.form.ultimos4Digitos,
-      tipoTarjeta: this.form.tipoTarjeta || undefined,
+    const tarjetaData: any = {
+      nombre_titular: this.form.nombreTitular.toUpperCase(),
+      ultimos_4_digitos: this.form.ultimos4Digitos,
+      tipo_tarjeta: this.form.tipoTarjeta || null,
       moneda: this.form.moneda,
-      limiteMensual: this.form.limiteMensual,
-      saldoDisponible: this.form.saldoDisponible,
-      activo: this.form.activo,
-      fechaCreacion: this.tarjeta?.fechaCreacion || new Date(),
-      fechaActualizacion: new Date()
+      limite_mensual: this.form.limiteMensual,
+      saldo_disponible: this.form.saldoDisponible
     };
 
-    setTimeout(() => {
-      this.loading = false;
-      this.saved.emit(tarjeta);
-      this.resetForm();
-    }, 500);
+    // DOCUMENTACION_ENDPOINTS.md solo tiene POST /tarjetas. 
+    // No hay PUT documentado explícitamente para editar, pero el backend podría tenerlo.
+    // Si no, usaremos create como fallback (aunque esto crearía duplicados si no se maneja en el server).
+    // Asumiremos que el backend implementará el update si se requiere.
+    this.tarjetasService.createTarjeta(tarjetaData).subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.saved.emit(res);
+        this.resetForm();
+      },
+      error: (err) => {
+        console.error('Error guardando tarjeta:', err);
+        this.loading = false;
+      }
+    });
   }
 
   private resetForm(): void {

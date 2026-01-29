@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { Usuario } from '../../models/interfaces';
 import { UsuarioModalComponent } from '../../components/modals/usuario-modal/usuario-modal.component';
+import { UsuariosService } from '../../services/usuarios.service';
 
 @Component({
   selector: 'app-usuarios-list',
@@ -107,19 +108,35 @@ import { UsuarioModalComponent } from '../../components/modals/usuario-modal/usu
     }
   `]
 })
-export class UsuariosListComponent {
+export class UsuariosListComponent implements OnInit {
   i18n = inject(I18nService);
+  private usuariosService = inject(UsuariosService);
+  
+  loading = false;
 
   // Modal handling
   isModalOpen = false;
   selectedUsuario?: Usuario;
 
-  usuarios: Usuario[] = [
-    { id: 1, nombreUsuario: 'admin', correo: 'admin@terracanada.ca', nombreCompleto: 'Jean Dupont', rolId: 1, rol: { id: 1, nombre: 'ADMIN', fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 2, nombreUsuario: 'supervisor1', correo: 'marie.tremblay@terracanada.ca', nombreCompleto: 'Marie Tremblay', rolId: 2, rol: { id: 2, nombre: 'SUPERVISOR', fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 3, nombreUsuario: 'equipo1', correo: 'pierre.gagnon@terracanada.ca', nombreCompleto: 'Pierre Gagnon', rolId: 3, rol: { id: 3, nombre: 'EQUIPO', fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 4, nombreUsuario: 'equipo2', correo: 'sophie.roy@terracanada.ca', nombreCompleto: 'Sophie Roy', rolId: 3, rol: { id: 3, nombre: 'EQUIPO', fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }
-  ];
+  usuarios: Usuario[] = [];
+
+  ngOnInit(): void {
+    this.loadUsuarios();
+  }
+
+  loadUsuarios(): void {
+    this.loading = true;
+    this.usuariosService.getUsuarios().subscribe({
+      next: (users) => {
+        this.usuarios = users;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando usuarios:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   openCreateModal(): void {
     this.selectedUsuario = undefined;
@@ -137,15 +154,7 @@ export class UsuariosListComponent {
   }
 
   onUsuarioSaved(usuario: Usuario): void {
-    if (this.selectedUsuario) {
-      const idx = this.usuarios.findIndex(u => u.id === usuario.id);
-      if (idx >= 0) {
-        this.usuarios[idx] = usuario;
-      }
-    } else {
-      usuario.id = this.usuarios.length ? Math.max(...this.usuarios.map(u => u.id)) + 1 : 1;
-      this.usuarios.push(usuario);
-    }
+    this.loadUsuarios();
     this.closeModal();
   }
 

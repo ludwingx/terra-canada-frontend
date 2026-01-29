@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
 import { Evento } from '../../models/interfaces';
 import { ModalComponent } from '../../components/shared/modal/modal.component';
+import { AuditoriaService } from '../../services/auditoria.service';
 
 @Component({
   selector: 'app-auditoria-list',
@@ -171,21 +172,36 @@ import { ModalComponent } from '../../components/shared/modal/modal.component';
     }
   `]
 })
-export class AuditoriaListComponent {
+export class AuditoriaListComponent implements OnInit {
   i18n = inject(I18nService);
+  private auditoriaService = inject(AuditoriaService);
+  
   filterType = '';
   filterDate = '';
+  loading = false;
 
   isModalOpen = false;
   selectedEvento?: Evento;
 
-  eventos: Evento[] = [
-    { id: 1, usuarioId: 1, usuario: { id: 1, nombreUsuario: 'admin', correo: 'a@a.com', nombreCompleto: 'Jean Dupont', rolId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, tipoEvento: 'CREAR', entidadTipo: 'Pago', entidadId: 6, descripcion: 'Pago RES-2026-006 creado', ipOrigen: '192.168.1.100', fechaEvento: new Date() },
-    { id: 2, usuarioId: 1, usuario: { id: 1, nombreUsuario: 'admin', correo: 'a@a.com', nombreCompleto: 'Jean Dupont', rolId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, tipoEvento: 'VERIFICAR_PAGO', entidadTipo: 'Pago', entidadId: 4, descripcion: 'Pago RES-2026-004 verificado por documento banco', ipOrigen: '192.168.1.100', fechaEvento: new Date('2026-01-28T10:30:00') },
-    { id: 3, usuarioId: 2, usuario: { id: 2, nombreUsuario: 'supervisor1', correo: 's@a.com', nombreCompleto: 'Marie Tremblay', rolId: 2, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, tipoEvento: 'ENVIAR_CORREO', entidadTipo: 'EnvioCorreo', entidadId: 3, descripcion: 'Correo enviado a Assurance Plus', ipOrigen: '192.168.1.101', fechaEvento: new Date('2026-01-28T09:15:00') },
-    { id: 4, usuarioId: 1, usuario: { id: 1, nombreUsuario: 'admin', correo: 'a@a.com', nombreCompleto: 'Jean Dupont', rolId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, tipoEvento: 'INICIO_SESION', entidadTipo: 'Usuario', entidadId: 1, descripcion: 'Inicio de sesión exitoso', ipOrigen: '192.168.1.100', fechaEvento: new Date('2026-01-28T08:00:00') },
-    { id: 5, usuarioId: 1, usuario: { id: 1, nombreUsuario: 'admin', correo: 'a@a.com', nombreCompleto: 'Jean Dupont', rolId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, tipoEvento: 'ACTUALIZAR', entidadTipo: 'Proveedor', entidadId: 1, descripcion: 'Proveedor Voyage Excellence actualizado', ipOrigen: '192.168.1.100', fechaEvento: new Date('2026-01-27T16:45:00') }
-  ];
+  eventos: Evento[] = [];
+
+  ngOnInit(): void {
+    this.loadEventos();
+  }
+
+  loadEventos(): void {
+    this.loading = true;
+    this.auditoriaService.getEventos().subscribe({
+      next: (eventos) => {
+        this.eventos = eventos;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando auditoría:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   get filteredEventos(): Evento[] {
     return this.eventos.filter(e => !this.filterType || e.tipoEvento === this.filterType);

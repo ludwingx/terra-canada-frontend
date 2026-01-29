@@ -1,8 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { DashboardKPIs, TopProveedor, Pago, Proveedor, Servicio } from '../../models/interfaces';
 import { PagoModalComponent } from '../../components/modals/pago-modal/pago-modal.component';
+import { DashboardService } from '../../services/dashboard.service';
+import { PagosService } from '../../services/pagos.service';
+import { AuthService } from '../../services/auth.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -250,55 +254,60 @@ import { PagoModalComponent } from '../../components/modals/pago-modal/pago-moda
     }
   `]
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   i18n = inject(I18nService);
+  private dashboardService = inject(DashboardService);
+  private pagosService = inject(PagosService);
+  private authService = inject(AuthService);
 
   // Modal handling
   isModalOpen = false;
   selectedPago?: Pago;
+  loading = true;
 
-  // Datos de ejemplo para demostración
+  // Estados
   kpis: DashboardKPIs = {
-    pagosPendientes: 23,
-    pagosPagados: 156,
-    pagosVerificados: 142,
-    correosPendientes: 8,
-    correosEnviados: 148,
-    montoTotalMes: 245780.50,
-    montoTarjetas: 187450.00,
-    montoCuentas: 58330.50
+    pagosPendientes: 0,
+    pagosPagados: 0,
+    pagosVerificados: 0,
+    correosPendientes: 0,
+    correosEnviados: 0,
+    montoTotalMes: 0,
+    montoTarjetas: 0,
+    montoCuentas: 0
   };
 
-  topProveedores: TopProveedor[] = [
-    { 
-      proveedor: { id: 1, nombre: 'Voyage Excellence', servicioId: 1, servicio: { id: 1, nombre: 'Hotels', activo: true, fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-      cantidadPagos: 45,
-      montoTotal: 67500.00
-    },
-    { 
-      proveedor: { id: 2, nombre: 'Canada Tours', servicioId: 2, servicio: { id: 2, nombre: 'Excursion', activo: true, fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-      cantidadPagos: 32,
-      montoTotal: 48200.00
-    },
-    { 
-      proveedor: { id: 3, nombre: 'Assurance Plus', servicioId: 3, servicio: { id: 3, nombre: 'Assurance', activo: true, fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-      cantidadPagos: 28,
-      montoTotal: 35800.00
-    },
-    { 
-      proveedor: { id: 4, nombre: 'Location Auto QC', servicioId: 4, servicio: { id: 4, nombre: 'Car rental', activo: true, fechaCreacion: new Date() }, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-      cantidadPagos: 24,
-      montoTotal: 29400.00
-    }
-  ];
+  topProveedores: TopProveedor[] = [];
+  recentPagos: Pago[] = [];
 
-  recentPagos: Pago[] = [
-    { id: 1, proveedorId: 1, proveedor: { id: 1, nombre: 'Voyage Excellence', servicioId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-001', monto: 2500.00, moneda: 'CAD', tipoMedioPago: 'TARJETA', pagado: true, verificado: true, gmailEnviado: true, activo: true, fechaCreacion: new Date() , fechaActualizacion: new Date() },
-    { id: 2, proveedorId: 2, proveedor: { id: 2, nombre: 'Canada Tours', servicioId: 2, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-002', monto: 1800.00, moneda: 'USD', tipoMedioPago: 'CUENTA_BANCARIA', pagado: true, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 3, proveedorId: 3, proveedor: { id: 3, nombre: 'Assurance Plus', servicioId: 3, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-003', monto: 950.00, moneda: 'CAD', tipoMedioPago: 'TARJETA', pagado: false, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date()  },
-    { id: 4, proveedorId: 1, proveedor: { id: 1, nombre: 'Voyage Excellence', servicioId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-004', monto: 3200.00, moneda: 'USD', tipoMedioPago: 'TARJETA', pagado: true, verificado: true, gmailEnviado: true, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date()  },
-    { id: 5, proveedorId: 4, proveedor: { id: 4, nombre: 'Location Auto QC', servicioId: 4, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }, usuarioId: 1, codigoReserva: 'RES-2026-005', monto: 780.00, moneda: 'CAD', tipoMedioPago: 'CUENTA_BANCARIA', pagado: true, verificado: false, gmailEnviado: false, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() }
-  ];
+  ngOnInit(): void {
+    this.reloadDashboard();
+  }
+
+  reloadDashboard(): void {
+    this.loading = true;
+    
+    // Cargamos KPIs y Pagos recientes en paralelo
+    forkJoin({
+      kpis: this.dashboardService.getKPIs(),
+      pagos: this.pagosService.getPagos({ limit: 5 })
+    }).subscribe({
+      next: (res) => {
+        this.kpis = res.kpis;
+        this.recentPagos = res.pagos;
+        this.loading = false;
+        
+        // El endpoint de top proveedores no parece estar documentado explícitamente 
+        // como una función separada en DOCUMENTACION_ENDPOINTS.md, 
+        // pero podemos obtenerlo del dashboard si el backend lo incluyera.
+        // Por ahora, si no está en el objeto data del dashboard, lo dejamos vacío.
+      },
+      error: (err) => {
+        console.error('Error cargando dashboard:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   openCreateModal(): void {
     this.selectedPago = undefined;
@@ -311,8 +320,7 @@ export class DashboardComponent {
   }
 
   onPagoSaved(pago: Pago): void {
-    pago.id = this.recentPagos.length ? Math.max(...this.recentPagos.map(p => p.id)) + 1 : 1;
-    this.recentPagos = [pago, ...this.recentPagos];
+    this.reloadDashboard();
     this.closeModal();
   }
 

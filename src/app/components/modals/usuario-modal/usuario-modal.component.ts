@@ -1,15 +1,11 @@
-import { Component, EventEmitter, Input, Output, inject, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { Usuario, Rol, RolUsuario } from '../../../models/interfaces';
-
-const ROLES: Rol[] = [
-  { id: 1, nombre: 'ADMIN', descripcion: 'Accès complet au système', fechaCreacion: new Date() },
-  { id: 2, nombre: 'SUPERVISOR', descripcion: 'Gestion des paiements et utilisateurs', fechaCreacion: new Date() },
-  { id: 3, nombre: 'EQUIPO', descripcion: 'Opérations courantes', fechaCreacion: new Date() },
-];
+import { RolesService } from '../../../services/roles.service';
+import { UsuariosService } from '../../../services/usuarios.service';
 
 @Component({
   selector: 'app-usuario-modal',
@@ -203,8 +199,10 @@ const ROLES: Rol[] = [
     }
   `]
 })
-export class UsuarioModalComponent implements OnInit {
+export class UsuarioModalComponent implements OnInit, OnChanges {
   i18n = inject(I18nService);
+  private rolesService = inject(RolesService);
+  private usuariosService = inject(UsuariosService);
 
   @Input() isOpen = false;
   @Input() usuario?: Usuario;
@@ -213,7 +211,7 @@ export class UsuarioModalComponent implements OnInit {
   @Output() saved = new EventEmitter<Usuario>();
 
   loading = false;
-  roles = ROLES;
+  roles: Rol[] = [];
 
   form = {
     nombreUsuario: '',
@@ -230,6 +228,24 @@ export class UsuarioModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadRoles();
+    this.initForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['usuario'] || (changes['isOpen'] && this.isOpen)) {
+      this.initForm();
+    }
+  }
+
+  loadRoles(): void {
+    this.rolesService.getRoles().subscribe({
+      next: (roles) => this.roles = roles,
+      error: (err) => console.error('Error cargando roles:', err)
+    });
+  }
+
+  private initForm(): void {
     if (this.usuario) {
       this.form = {
         nombreUsuario: this.usuario.nombreUsuario,
@@ -240,6 +256,8 @@ export class UsuarioModalComponent implements OnInit {
         password: '',
         activo: this.usuario.activo
       };
+    } else {
+      this.resetForm();
     }
   }
 
@@ -264,24 +282,34 @@ export class UsuarioModalComponent implements OnInit {
 
     this.loading = true;
 
-    const usuario: Usuario = {
-      id: this.usuario?.id || 0,
-      nombreUsuario: this.form.nombreUsuario,
-      nombreCompleto: this.form.nombreCompleto,
+    const usuarioData: any = {
+      nombre_usuario: this.form.nombreUsuario,
+      nombre_completo: this.form.nombreCompleto,
       correo: this.form.correo,
-      telefono: this.form.telefono || undefined,
-      rolId: this.form.rolId,
-      rol: this.roles.find(r => r.id === this.form.rolId),
-      activo: this.form.activo,
-      fechaCreacion: this.usuario?.fechaCreacion || new Date(),
-      fechaActualizacion: new Date()
+      telefono: this.form.telefono || null,
+      rol_id: this.form.rolId,
+      activo: this.form.activo
     };
 
-    setTimeout(() => {
-      this.loading = false;
-      this.saved.emit(usuario);
-      this.resetForm();
-    }, 500);
+    if (!this.isEdit) {
+      usuarioData.password = this.form.password;
+    }
+
+    const action = this.isEdit 
+      ? this.usuariosService.updateUsuario(this.usuario!.id, usuarioData)
+      : this.usuariosService.createUsuario(usuarioData);
+
+    action.subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.saved.emit(res);
+        this.resetForm();
+      },
+      error: (err) => {
+        console.error('Error guardando usuario:', err);
+        this.loading = false;
+      }
+    });
   }
 
   private resetForm(): void {

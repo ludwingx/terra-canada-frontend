@@ -5,31 +5,12 @@ import { I18nService } from '../../../services/i18n.service';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { ClienteModalComponent } from '../cliente-modal/cliente-modal.component';
 import { Pago, Proveedor, TarjetaCredito, CuentaBancaria, TipoMoneda, TipoMedioPago, Cliente } from '../../../models/interfaces';
-
-// Datos de ejemplo (en producción vendrían del servicio)
-const PROVEEDORES: Proveedor[] = [
-  { id: 1, nombre: 'Voyage Excellence', servicioId: 1, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 2, nombre: 'Canada Tours', servicioId: 2, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 3, nombre: 'Assurance Plus', servicioId: 3, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 4, nombre: 'Location Auto QC', servicioId: 4, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-];
-
-const TARJETAS: TarjetaCredito[] = [
-  { id: 1, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '4521', moneda: 'CAD', limiteMensual: 25000, saldoDisponible: 18750, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 2, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '8832', moneda: 'CAD', limiteMensual: 15000, saldoDisponible: 12340, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 3, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '2156', moneda: 'USD', limiteMensual: 20000, saldoDisponible: 3500, activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-];
-
-const CUENTAS: CuentaBancaria[] = [
-  { id: 1, nombreBanco: 'Banque Nationale', nombreCuenta: 'Compte Opérations', ultimos4Digitos: '3421', moneda: 'CAD', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 2, nombreBanco: 'TD Bank', nombreCuenta: 'Business USD', ultimos4Digitos: '8876', moneda: 'USD', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-];
-
-const CLIENTES: Cliente[] = [
-  { id: 1, nombre: 'Hôtel Le Germain', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 2, nombre: 'Fairmont Château Frontenac', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-  { id: 3, nombre: 'Delta Hotels by Marriott', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-];
+import { ProveedoresService } from '../../../services/proveedores.service';
+import { TarjetasService } from '../../../services/tarjetas.service';
+import { CuentasService } from '../../../services/cuentas.service';
+import { ClientesService } from '../../../services/clientes.service';
+import { PagosService } from '../../../services/pagos.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-pago-modal',
@@ -492,6 +473,11 @@ const CLIENTES: Cliente[] = [
 })
 export class PagoModalComponent implements OnInit, OnChanges {
   i18n = inject(I18nService);
+  private proveedoresService = inject(ProveedoresService);
+  private tarjetasService = inject(TarjetasService);
+  private cuentasService = inject(CuentasService);
+  private clientesService = inject(ClientesService);
+  private pagosService = inject(PagosService);
 
   @Input() isOpen = false;
   @Input() pago?: Pago;
@@ -500,10 +486,12 @@ export class PagoModalComponent implements OnInit, OnChanges {
   @Output() saved = new EventEmitter<Pago>();
 
   loading = false;
-  proveedores = PROVEEDORES;
-  tarjetas = TARJETAS;
-  cuentas = CUENTAS;
-  clientes = CLIENTES;
+  
+  // Listas de datos reales
+  proveedores: Proveedor[] = [];
+  tarjetas: TarjetaCredito[] = [];
+  cuentas: CuentaBancaria[] = [];
+  clientes: Cliente[] = [];
 
   form = {
     codigoReserva: '',
@@ -538,7 +526,30 @@ export class PagoModalComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
+    this.loadInitialData();
     this.initForm();
+  }
+
+  loadInitialData(): void {
+    this.loading = true;
+    forkJoin({
+      proveedores: this.proveedoresService.getProveedores(),
+      tarjetas: this.tarjetasService.getTarjetas(),
+      cuentas: this.cuentasService.getCuentas(),
+      clientes: this.clientesService.getClientes()
+    }).subscribe({
+      next: (res) => {
+        this.proveedores = res.proveedores;
+        this.tarjetas = res.tarjetas;
+        this.cuentas = res.cuentas;
+        this.clientes = res.clientes;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando catálogos:', err);
+        this.loading = false;
+      }
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -691,39 +702,36 @@ export class PagoModalComponent implements OnInit, OnChanges {
 
     this.loading = true;
 
-    const pago: Pago = {
-      id: this.pago?.id || 0,
+    const pagoData: any = {
       codigoReserva: this.form.codigoReserva,
       proveedorId: this.form.proveedorId!,
-      proveedor: this.proveedores.find(p => p.id === this.form.proveedorId),
-      usuarioId: 1, // Usuario actual (simulado)
       monto: this.form.monto,
       moneda: this.form.moneda,
       tipoMedioPago: this.form.tipoMedioPago,
-      tarjetaId: this.form.tipoMedioPago === 'TARJETA' ? this.form.tarjetaId! : undefined,
-      cuentaBancariaId: this.form.tipoMedioPago === 'CUENTA_BANCARIA' ? this.form.cuentaBancariaId! : undefined,
+      tarjetaId: this.form.tipoMedioPago === 'TARJETA' ? this.form.tarjetaId : null,
+      cuentaBancariaId: this.form.tipoMedioPago === 'CUENTA_BANCARIA' ? this.form.cuentaBancariaId : null,
       descripcion: this.form.descripcion || undefined,
-      fechaEsperadaDebito: this.form.fechaEsperadaDebito ? new Date(this.form.fechaEsperadaDebito) : undefined,
+      fechaEsperadaDebito: this.form.fechaEsperadaDebito || undefined,
       pagado: this.form.pagado,
       verificado: this.form.verificado,
-      gmailEnviado: this.pago?.gmailEnviado || false,
-      activo: true,
-      clientes: this.form.clientesIds.map(id => ({
-        id: 0,
-        pagoId: this.pago?.id || 0,
-        clienteId: id,
-        cliente: this.clientes.find(c => c.id === id),
-        fechaCreacion: new Date()
-      })),
-      fechaCreacion: this.pago?.fechaCreacion || new Date(),
-      fechaActualizacion: new Date()
+      clientesIds: this.form.clientesIds
     };
 
-    setTimeout(() => {
-      this.loading = false;
-      this.saved.emit(pago);
-      this.resetForm();
-    }, 500);
+    const action = this.isEdit 
+      ? this.pagosService.updatePago(this.pago!.id, pagoData)
+      : this.pagosService.createPago(pagoData);
+
+    action.subscribe({
+      next: (pagoSaved) => {
+        this.loading = false;
+        this.saved.emit(pagoSaved);
+        this.resetForm();
+      },
+      error: (err) => {
+        console.error('Error guardando pago:', err);
+        this.loading = false;
+      }
+    });
   }
 
   private resetForm(): void {

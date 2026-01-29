@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { TarjetaCredito } from '../../models/interfaces';
 import { TarjetaModalComponent } from '../../components/modals/tarjeta-modal/tarjeta-modal.component';
+import { TarjetasService } from '../../services/tarjetas.service';
 
 @Component({
   selector: 'app-tarjetas-list',
@@ -251,19 +252,35 @@ import { TarjetaModalComponent } from '../../components/modals/tarjeta-modal/tar
     }
   `]
 })
-export class TarjetasListComponent {
+export class TarjetasListComponent implements OnInit {
   i18n = inject(I18nService);
+  private tarjetasService = inject(TarjetasService);
+  
+  loading = false;
 
   // Modal handling
   isModalOpen = false;
   selectedTarjeta?: TarjetaCredito;
 
-  tarjetas: TarjetaCredito[] = [
-    { id: 1, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '4521', moneda: 'CAD', limiteMensual: 25000, saldoDisponible: 18750, tipoTarjeta: 'Visa Infinite', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 2, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '8832', moneda: 'CAD', limiteMensual: 15000, saldoDisponible: 12340, tipoTarjeta: 'Mastercard World', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 3, nombreTitular: 'TERRA CANADA INC', ultimos4Digitos: '2156', moneda: 'USD', limiteMensual: 20000, saldoDisponible: 3500, tipoTarjeta: 'Visa Business', activo: true, fechaCreacion: new Date(), fechaActualizacion: new Date() },
-    { id: 4, nombreTitular: 'TERRA OPERATIONS', ultimos4Digitos: '7744', moneda: 'CAD', limiteMensual: 10000, saldoDisponible: 10000, tipoTarjeta: 'Amex Gold', activo: false, fechaCreacion: new Date(), fechaActualizacion: new Date() }
-  ];
+  tarjetas: TarjetaCredito[] = [];
+
+  ngOnInit(): void {
+    this.loadTarjetas();
+  }
+
+  loadTarjetas(): void {
+    this.loading = true;
+    this.tarjetasService.getTarjetas().subscribe({
+      next: (tarjetas) => {
+        this.tarjetas = tarjetas;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error cargando tarjetas:', err);
+        this.loading = false;
+      }
+    });
+  }
 
   openCreateModal(): void {
     this.selectedTarjeta = undefined;
@@ -281,15 +298,7 @@ export class TarjetasListComponent {
   }
 
   onTarjetaSaved(tarjeta: TarjetaCredito): void {
-    if (this.selectedTarjeta) {
-      const idx = this.tarjetas.findIndex(t => t.id === tarjeta.id);
-      if (idx >= 0) {
-        this.tarjetas[idx] = tarjeta;
-      }
-    } else {
-      tarjeta.id = this.tarjetas.length ? Math.max(...this.tarjetas.map(t => t.id)) + 1 : 1;
-      this.tarjetas.push(tarjeta);
-    }
+    this.loadTarjetas();
     this.closeModal();
   }
 

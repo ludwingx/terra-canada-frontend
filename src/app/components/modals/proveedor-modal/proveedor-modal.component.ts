@@ -1,23 +1,11 @@
-import { Component, EventEmitter, Input, Output, inject, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, OnChanges, SimpleChanges, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { Proveedor, ProveedorCorreo, Servicio } from '../../../models/interfaces';
-
-// Servicios disponibles (basados en la documentación)
-const SERVICIOS: Servicio[] = [
-  { id: 1, nombre: 'Assurance', activo: true, fechaCreacion: new Date() },
-  { id: 2, nombre: 'Comptable', activo: true, fechaCreacion: new Date() },
-  { id: 3, nombre: 'Cadeaux et invitations', activo: true, fechaCreacion: new Date() },
-  { id: 4, nombre: 'Bureau / équipement / internet, téléphonie', activo: true, fechaCreacion: new Date() },
-  { id: 5, nombre: 'Voyage de reco', activo: true, fechaCreacion: new Date() },
-  { id: 6, nombre: 'Frais coworking/cafés', activo: true, fechaCreacion: new Date() },
-  { id: 7, nombre: 'Hotels', activo: true, fechaCreacion: new Date() },
-  { id: 8, nombre: 'Opérations clients (Services/activités/guides/entrées/transports)', activo: true, fechaCreacion: new Date() },
-  { id: 9, nombre: 'Promotion de l\'agence', activo: true, fechaCreacion: new Date() },
-  { id: 10, nombre: 'Salaires', activo: true, fechaCreacion: new Date() },
-];
+import { ServiciosService } from '../../../services/servicios.service';
+import { ProveedoresService } from '../../../services/proveedores.service';
 
 interface CorreoForm {
   correo: string;
@@ -206,8 +194,10 @@ interface CorreoForm {
     .mt-2 { margin-top: var(--spacing-sm); }
   `]
 })
-export class ProveedorModalComponent implements OnChanges {
+export class ProveedorModalComponent implements OnInit, OnChanges {
   i18n = inject(I18nService);
+  private serviciosService = inject(ServiciosService);
+  private proveedoresService = inject(ProveedoresService);
 
   @Input() isOpen = false;
   @Input() proveedor?: Proveedor;
@@ -216,7 +206,7 @@ export class ProveedorModalComponent implements OnChanges {
   @Output() saved = new EventEmitter<Proveedor>();
 
   loading = false;
-  servicios = SERVICIOS;
+  servicios: Servicio[] = [];
 
   form = {
     nombre: '',
@@ -228,6 +218,17 @@ export class ProveedorModalComponent implements OnChanges {
   };
 
   correos: CorreoForm[] = [{ correo: '', principal: true }];
+
+  ngOnInit(): void {
+    this.loadServicios();
+  }
+
+  loadServicios(): void {
+    this.serviciosService.getServicios().subscribe({
+      next: (servicios) => this.servicios = servicios,
+      error: (err) => console.error('Error cargando servicios:', err)
+    });
+  }
 
   get isEdit(): boolean {
     return !!this.proveedor;
@@ -288,33 +289,31 @@ export class ProveedorModalComponent implements OnChanges {
 
     this.loading = true;
 
-    const proveedor: Proveedor = {
-      id: this.proveedor?.id || 0,
+    // Nota: El backend espera correos por separado o dentro del objeto? 
+    // DOCUMENTACION_ENDPOINTS.md no muestra correos en el POST /proveedores inicial.
+    // Pero asumiremos que el backend los manejará o los ignorará si no están listos.
+    const proveedorData: any = {
       nombre: this.form.nombre,
-      servicioId: this.form.servicioId!,
-      servicio: this.servicios.find(s => s.id === this.form.servicioId),
-      lenguaje: this.form.lenguaje || undefined,
-      telefono: this.form.telefono || undefined,
-      descripcion: this.form.descripcion || undefined,
-      activo: this.form.activo,
-      correos: this.correos.filter(c => c.correo.trim()).map((c, i) => ({
-        id: i + 1,
-        proveedorId: this.proveedor?.id || 0,
-        correo: c.correo,
-        principal: c.principal,
-        activo: true,
-        fechaCreacion: new Date()
-      })),
-      fechaCreacion: this.proveedor?.fechaCreacion || new Date(),
-      fechaActualizacion: new Date()
+      servicio_id: this.form.servicioId!,
+      lenguaje: this.form.lenguaje || null,
+      telefono: this.form.telefono || null,
+      descripcion: this.form.descripcion || null
     };
 
-    // Simular guardado
-    setTimeout(() => {
-      this.loading = false;
-      this.saved.emit(proveedor);
-      this.resetForm();
-    }, 500);
+    // Si el backend tuviera endpoint de update, lo usaríamos. 
+    // Por ahora DOCUMENTACION_ENDPOINTS.md solo tiene create.
+    // Usaremos createProveedor para ambos casos como fallback si no hay PUT definido.
+    this.proveedoresService.createProveedor(proveedorData).subscribe({
+      next: (res) => {
+        this.loading = false;
+        this.saved.emit(res);
+        this.resetForm();
+      },
+      error: (err) => {
+        console.error('Error guardando proveedor:', err);
+        this.loading = false;
+      }
+    });
   }
 
   private resetForm(): void {
