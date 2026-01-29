@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
 import { ModalComponent } from '../../shared/modal/modal.component';
+import { ClienteModalComponent } from '../cliente-modal/cliente-modal.component';
 import { Pago, Proveedor, TarjetaCredito, CuentaBancaria, TipoMoneda, TipoMedioPago, Cliente } from '../../../models/interfaces';
 
 // Datos de ejemplo (en producción vendrían del servicio)
@@ -33,7 +34,7 @@ const CLIENTES: Cliente[] = [
 @Component({
   selector: 'app-pago-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent],
+  imports: [CommonModule, FormsModule, ModalComponent, ClienteModalComponent],
   template: `
     <app-modal
       [isOpen]="isOpen"
@@ -45,104 +46,153 @@ const CLIENTES: Cliente[] = [
       (saved)="onSave()"
     >
       <form class="form-grid">
-        <!-- Código de Reserva -->
-        <div class="form-group">
-          <label class="form-label required">{{ i18n.t('payments.code') }}</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            [(ngModel)]="form.codigoReserva" 
-            name="codigoReserva"
-            placeholder="RES-2026-XXX"
-          >
+        <div class="section full-width">
+          <div class="section-title">{{ i18n.language() === 'fr' ? 'Informations du paiement' : 'Información del pago' }}</div>
+          <div class="section-grid">
+            <!-- Código de Reserva -->
+            <div class="form-group">
+              <label class="form-label required">{{ i18n.t('payments.code') }}</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="form.codigoReserva" 
+                name="codigoReserva"
+                placeholder="RES-2026-XXX"
+              >
+            </div>
+
+            <!-- Proveedor -->
+            <div class="form-group">
+              <label class="form-label required">{{ i18n.t('payments.supplier') }}</label>
+              <select class="form-control" [(ngModel)]="form.proveedorId" name="proveedorId">
+                <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner un fournisseur' : 'Seleccionar un proveedor' }}</option>
+                @for (p of proveedores; track p.id) {
+                  <option [ngValue]="p.id">{{ p.nombre }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Monto -->
+            <div class="form-group">
+              <label class="form-label required">{{ i18n.t('payments.amount') }}</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">$</span>
+                <input 
+                  type="number" 
+                  class="form-control" 
+                  [(ngModel)]="form.monto" 
+                  name="monto"
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                >
+              </div>
+            </div>
+
+            <!-- Moneda -->
+            <div class="form-group">
+              <label class="form-label required">{{ i18n.t('payments.currency') }}</label>
+              <select class="form-control" [(ngModel)]="form.moneda" name="moneda" (ngModelChange)="onMonedaChange()">
+                <option value="CAD">CAD - Dollar canadien</option>
+                <option value="USD">USD - Dollar américain</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <!-- Proveedor -->
-        <div class="form-group">
-          <label class="form-label required">{{ i18n.t('payments.supplier') }}</label>
-          <select class="form-control" [(ngModel)]="form.proveedorId" name="proveedorId">
-            <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner un fournisseur' : 'Seleccionar un proveedor' }}</option>
-            @for (p of proveedores; track p.id) {
-              <option [ngValue]="p.id">{{ p.nombre }}</option>
-            }
-          </select>
-        </div>
-
-        <!-- Monto -->
-        <div class="form-group">
-          <label class="form-label required">{{ i18n.t('payments.amount') }}</label>
-          <div class="input-with-prefix">
-            <span class="input-prefix">$</span>
-            <input 
-              type="number" 
-              class="form-control" 
-              [(ngModel)]="form.monto" 
-              name="monto"
-              placeholder="0.00"
-              min="0"
-              step="0.01"
+        <div class="section full-width">
+          <div class="section-title">{{ i18n.t('payments.method') }}</div>
+          <div class="payment-methods">
+            <button
+              type="button"
+              class="method-card"
+              [class.active]="form.tipoMedioPago === 'TARJETA'"
+              (click)="form.tipoMedioPago = 'TARJETA'; onTipoChange()"
             >
+              <div class="method-icon">💳</div>
+              <div class="method-name">{{ i18n.language() === 'fr' ? 'Carte de crédit' : 'Tarjeta de crédito' }}</div>
+              <div class="method-desc">{{ i18n.language() === 'fr' ? 'Sélectionner une carte' : 'Selecciona una tarjeta' }}</div>
+            </button>
+            <button
+              type="button"
+              class="method-card"
+              [class.active]="form.tipoMedioPago === 'CUENTA_BANCARIA'"
+              (click)="form.tipoMedioPago = 'CUENTA_BANCARIA'; onTipoChange()"
+            >
+              <div class="method-icon">🏦</div>
+              <div class="method-name">{{ i18n.language() === 'fr' ? 'Compte bancaire' : 'Cuenta bancaria' }}</div>
+              <div class="method-desc">{{ i18n.language() === 'fr' ? 'Sélectionner un compte' : 'Selecciona una cuenta' }}</div>
+            </button>
           </div>
-        </div>
 
-        <!-- Moneda -->
-        <div class="form-group">
-          <label class="form-label required">{{ i18n.t('payments.currency') }}</label>
-          <select class="form-control" [(ngModel)]="form.moneda" name="moneda" (ngModelChange)="onMonedaChange()">
-            <option value="CAD">CAD - Dollar canadien</option>
-            <option value="USD">USD - Dollar américain</option>
-          </select>
-        </div>
-
-        <!-- Tipo Medio de Pago -->
-        <div class="form-group">
-          <label class="form-label required">{{ i18n.t('payments.method') }}</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input type="radio" name="tipoMedioPago" value="TARJETA" [(ngModel)]="form.tipoMedioPago" (ngModelChange)="onTipoChange()">
-              💳 {{ i18n.language() === 'fr' ? 'Carte de crédit' : 'Tarjeta de crédito' }}
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="tipoMedioPago" value="CUENTA_BANCARIA" [(ngModel)]="form.tipoMedioPago" (ngModelChange)="onTipoChange()">
-              🏦 {{ i18n.language() === 'fr' ? 'Compte bancaire' : 'Cuenta bancaria' }}
-            </label>
+          <div class="section-grid mt">
+            <!-- Selección de Tarjeta/Cuenta -->
+            <div class="form-group">
+              @if (form.tipoMedioPago === 'TARJETA') {
+                <label class="form-label required">{{ i18n.language() === 'fr' ? 'Carte' : 'Tarjeta' }}</label>
+                <select class="form-control" [(ngModel)]="form.tarjetaId" name="tarjetaId">
+                  <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
+                  @for (t of tarjetasFiltradas; track t.id) {
+                    <option [ngValue]="t.id">****{{ t.ultimos4Digitos }} - {{ t.nombreTitular }} ({{ formatCurrency(t.saldoDisponible, t.moneda) }})</option>
+                  }
+                </select>
+              } @else {
+                <label class="form-label required">{{ i18n.language() === 'fr' ? 'Compte' : 'Cuenta' }}</label>
+                <select class="form-control" [(ngModel)]="form.cuentaBancariaId" name="cuentaBancariaId">
+                  <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
+                  @for (c of cuentasFiltradas; track c.id) {
+                    <option [ngValue]="c.id">{{ c.nombreBanco }} - ****{{ c.ultimos4Digitos }} ({{ c.moneda }})</option>
+                  }
+                </select>
+              }
+            </div>
           </div>
-        </div>
-
-        <!-- Selección de Tarjeta/Cuenta -->
-        <div class="form-group">
-          @if (form.tipoMedioPago === 'TARJETA') {
-            <label class="form-label required">{{ i18n.language() === 'fr' ? 'Carte' : 'Tarjeta' }}</label>
-            <select class="form-control" [(ngModel)]="form.tarjetaId" name="tarjetaId">
-              <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
-              @for (t of tarjetasFiltradas; track t.id) {
-                <option [ngValue]="t.id">****{{ t.ultimos4Digitos }} - {{ t.nombreTitular }} ({{ formatCurrency(t.saldoDisponible, t.moneda) }})</option>
-              }
-            </select>
-          } @else {
-            <label class="form-label required">{{ i18n.language() === 'fr' ? 'Compte' : 'Cuenta' }}</label>
-            <select class="form-control" [(ngModel)]="form.cuentaBancariaId" name="cuentaBancariaId">
-              <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
-              @for (c of cuentasFiltradas; track c.id) {
-                <option [ngValue]="c.id">{{ c.nombreBanco }} - ****{{ c.ultimos4Digitos }} ({{ c.moneda }})</option>
-              }
-            </select>
-          }
         </div>
 
         <!-- Clientes asociados -->
         <div class="form-group full-width">
-          <label class="form-label">{{ i18n.language() === 'fr' ? 'Clients associés (hôtels)' : 'Clientes asociados (hoteles)' }}</label>
-          <div class="checkbox-list">
-            @for (cliente of clientes; track cliente.id) {
-              <label class="checkbox-item">
-                <input 
-                  type="checkbox" 
-                  [checked]="isClienteSelected(cliente.id)"
-                  (change)="toggleCliente(cliente.id)"
-                >
-                {{ cliente.nombre }}
-              </label>
+          <div class="clientes-header">
+            <label class="form-label">{{ i18n.language() === 'fr' ? 'Clients associés (hôtels)' : 'Clientes asociados (hoteles)' }}</label>
+            @if (!isEdit) {
+              <button type="button" class="btn btn-secondary btn-sm" (click)="openNewClienteModal()">
+                + {{ i18n.language() === 'fr' ? 'Nouveau client' : 'Nuevo cliente' }}
+              </button>
+            }
+          </div>
+          <div class="multi-select">
+            <div class="selected-chips">
+              @for (c of selectedClientes; track c.id) {
+                <span class="chip">
+                  <span class="chip-text">{{ c.nombre }}</span>
+                  <button type="button" class="chip-remove" (click)="removeCliente(c.id)">×</button>
+                </span>
+              }
+              <input
+                type="text"
+                class="chip-input"
+                [placeholder]="i18n.language() === 'fr' ? 'Ajouter un client...' : 'Agregar cliente...'"
+                [(ngModel)]="clienteSearch"
+                name="clienteSearch"
+                (focus)="openClienteDropdown()"
+                (blur)="onClienteInputBlur()"
+                (ngModelChange)="openClienteDropdown()"
+              >
+            </div>
+
+            @if (isClienteDropdownOpen) {
+              <div class="dropdown">
+                @for (cliente of clientesFiltrados; track cliente.id) {
+                  <button
+                    type="button"
+                    class="dropdown-item"
+                    (mousedown)="selectCliente(cliente.id); $event.preventDefault()"
+                  >
+                    {{ cliente.nombre }}
+                  </button>
+                } @empty {
+                  <div class="dropdown-empty">{{ i18n.t('msg.no_data') }}</div>
+                }
+              </div>
             }
           </div>
         </div>
@@ -185,6 +235,12 @@ const CLIENTES: Cliente[] = [
           </div>
         }
       </form>
+
+      <app-cliente-modal
+        [isOpen]="isClienteModalOpen"
+        (closed)="closeClienteModal()"
+        (saved)="onClienteCreated($event)"
+      />
     </app-modal>
   `,
   styles: [`
@@ -250,6 +306,65 @@ const CLIENTES: Cliente[] = [
       input { cursor: pointer; }
     }
 
+    .section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: var(--spacing-sm);
+      letter-spacing: 0.02em;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+    }
+
+    .mt {
+      margin-top: var(--spacing-md);
+    }
+
+    .payment-methods {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-sm);
+    }
+
+    .method-card {
+      border: 2px solid var(--border-color);
+      border-radius: var(--border-radius);
+      background: var(--bg-card);
+      padding: var(--spacing-md);
+      text-align: left;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      &:hover {
+        border-color: var(--primary-color);
+        background: rgba(45, 122, 122, 0.05);
+      }
+
+      &.active {
+        border-color: var(--primary-color);
+        background: rgba(45, 122, 122, 0.12);
+      }
+    }
+
+    .method-icon { font-size: 20px; }
+    .method-name { font-weight: 600; font-size: 13px; color: var(--text-primary); }
+    .method-desc { font-size: 12px; color: var(--text-muted); }
+
     .checkbox-list {
       display: flex;
       flex-wrap: wrap;
@@ -265,6 +380,105 @@ const CLIENTES: Cliente[] = [
       gap: var(--spacing-xs);
       font-size: 12px;
       cursor: pointer;
+    }
+
+    .clientes-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-sm);
+    }
+
+    .multi-select {
+      position: relative;
+    }
+
+    .selected-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-xs);
+      padding: 8px;
+      background: var(--bg-hover);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      min-height: 42px;
+      align-items: center;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(45, 122, 122, 0.12);
+      border: 1px solid rgba(45, 122, 122, 0.25);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--text-primary);
+    }
+
+    .chip-remove {
+      width: 18px;
+      height: 18px;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.08);
+        color: var(--text-primary);
+      }
+    }
+
+    .chip-input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 13px;
+      min-width: 180px;
+      flex: 1;
+      color: var(--text-primary);
+    }
+
+    .dropdown {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      z-index: 5;
+      max-height: 220px;
+      overflow: auto;
+    }
+
+    .dropdown-item {
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--text-primary);
+      font-size: 13px;
+
+      &:hover {
+        background: var(--bg-hover);
+      }
+    }
+
+    .dropdown-empty {
+      padding: 10px 12px;
+      color: var(--text-muted);
+      font-size: 13px;
     }
 
     .status-toggles {
@@ -306,6 +520,11 @@ export class PagoModalComponent implements OnInit, OnChanges {
     verificado: false
   };
 
+  clienteSearch = '';
+  isClienteDropdownOpen = false;
+
+  isClienteModalOpen = false;
+
   get isEdit(): boolean {
     return !!this.pago;
   }
@@ -344,7 +563,13 @@ export class PagoModalComponent implements OnInit, OnChanges {
         pagado: this.pago.pagado,
         verificado: this.pago.verificado
       };
+    } else {
+      this.form.fechaEsperadaDebito = this.todayDateInputValue();
     }
+  }
+
+  private todayDateInputValue(): string {
+    return new Date().toISOString().slice(0, 10);
   }
 
   isFormValid(): boolean {
@@ -381,6 +606,72 @@ export class PagoModalComponent implements OnInit, OnChanges {
     } else {
       this.form.clientesIds.push(id);
     }
+  }
+
+  get selectedClientes(): Cliente[] {
+    return this.form.clientesIds
+      .map(id => this.clientes.find(c => c.id === id))
+      .filter((c): c is Cliente => !!c);
+  }
+
+  get clientesFiltrados(): Cliente[] {
+    const q = this.clienteSearch.trim().toLowerCase();
+    return this.clientes
+      .filter(c => !this.form.clientesIds.includes(c.id))
+      .filter(c => !q || c.nombre.toLowerCase().includes(q));
+  }
+
+  openClienteDropdown(): void {
+    this.isClienteDropdownOpen = true;
+  }
+
+  onClienteInputBlur(): void {
+    setTimeout(() => {
+      this.isClienteDropdownOpen = false;
+      this.clienteSearch = '';
+    }, 150);
+  }
+
+  selectCliente(id: number): void {
+    if (!this.form.clientesIds.includes(id)) {
+      this.form.clientesIds.push(id);
+    }
+    this.clienteSearch = '';
+    this.isClienteDropdownOpen = true;
+  }
+
+  removeCliente(id: number): void {
+    const idx = this.form.clientesIds.indexOf(id);
+    if (idx >= 0) {
+      this.form.clientesIds.splice(idx, 1);
+    }
+  }
+
+  openNewClienteModal(): void {
+    this.isClienteModalOpen = true;
+  }
+
+  closeClienteModal(): void {
+    this.isClienteModalOpen = false;
+  }
+
+  onClienteCreated(cliente: Cliente): void {
+    const newId = cliente.id && cliente.id !== 0
+      ? cliente.id
+      : (this.clientes.length ? Math.max(...this.clientes.map(c => c.id)) + 1 : 1);
+
+    const nuevo: Cliente = {
+      ...cliente,
+      id: newId
+    };
+
+    this.clientes = [nuevo, ...this.clientes];
+
+    if (!this.form.clientesIds.includes(nuevo.id)) {
+      this.form.clientesIds.push(nuevo.id);
+    }
+
+    this.isClienteModalOpen = false;
   }
 
   formatCurrency(amount: number, currency: string): string {
@@ -445,10 +736,14 @@ export class PagoModalComponent implements OnInit, OnChanges {
       tarjetaId: null,
       cuentaBancariaId: null,
       clientesIds: [],
-      fechaEsperadaDebito: '',
+      fechaEsperadaDebito: this.todayDateInputValue(),
       descripcion: '',
       pagado: false,
       verificado: false
     };
+
+    this.clienteSearch = '';
+    this.isClienteDropdownOpen = false;
+    this.isClienteModalOpen = false;
   }
 }
