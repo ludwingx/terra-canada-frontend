@@ -33,13 +33,19 @@ export class AuthService {
     password: string;
     rol_id: number;
   }): Observable<Usuario> {
-    return this.api.post<{ success: boolean; data: Usuario }>('usuarios', payload).pipe(
+    return this.api.post<{ success?: boolean; estado?: boolean; data: Usuario }>('usuarios', {
+      nombre_usuario: payload.nombre_usuario,
+      nombre_completo: payload.nombre_completo,
+      correo: payload.email,
+      contrasena: payload.password,
+      rol_id: payload.rol_id
+    }).pipe(
       map(res => res.data)
     );
   }
 
   getMe(): Observable<Usuario> {
-    return this.api.get<{success: boolean, data: Usuario}>(`auth/me`).pipe(
+    return this.api.get<{success?: boolean, estado?: boolean, data: Usuario}>(`auth/me`).pipe(
       tap(res => this.currentUser.set(res.data)),
       map(res => res.data)
     );

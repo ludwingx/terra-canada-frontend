@@ -14,13 +14,12 @@ import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
 import { authRedirectGuard } from './guards/auth-redirect.guard';
 import { LoginComponent } from './pages/auth/login/login.component';
-import { RegisterComponent } from './pages/auth/register/register.component';
 import { AuthRedirectComponent } from './pages/auth/redirect/auth-redirect.component';
 
 export const routes: Routes = [
-  { path: '', component: AuthRedirectComponent, canActivate: [authRedirectGuard] },
+  { path: '', component: AuthRedirectComponent, canActivate: [authRedirectGuard], pathMatch: 'full' },
   { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
-  { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
+  { path: 'register', redirectTo: 'login', pathMatch: 'full' },
   {
     path: '',
     component: MainLayoutComponent,

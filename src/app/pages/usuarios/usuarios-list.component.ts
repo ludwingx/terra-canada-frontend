@@ -158,7 +158,15 @@ export class UsuariosListComponent implements OnInit {
     this.closeModal();
   }
 
-  getInitials(name: string): string {
-    return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  getInitials(name?: string | null): string {
+    const safe = String(name || '').trim();
+    if (!safe) return 'US';
+    return safe
+      .split(' ')
+      .filter(Boolean)
+      .map(w => w[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
   }
 }
