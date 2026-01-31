@@ -198,4 +198,12 @@ export class CuentasListComponent implements OnInit {
     this.loadCuentas();
     this.closeModal();
   }
+
+  formatCurrency(amount: any, currency: string = 'CAD'): string {
+    const value = Number(amount || 0);
+    return new Intl.NumberFormat(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES', {
+      style: 'currency',
+      currency: currency || 'CAD'
+    }).format(isNaN(value) ? 0 : value);
+  }
 }

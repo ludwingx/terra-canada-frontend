@@ -353,14 +353,17 @@ export class TarjetasListComponent implements OnInit {
     this.closeModal();
   }
 
-  formatCurrency(amount: number, currency: string = 'CAD'): string {
+  formatCurrency(amount: any, currency: string = 'CAD'): string {
+    const value = Number(amount || 0);
     return new Intl.NumberFormat(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES', {
       style: 'currency',
-      currency: currency
-    }).format(amount);
+      currency: currency || 'CAD'
+    }).format(isNaN(value) ? 0 : value);
   }
 
   getUsagePercentage(tarjeta: TarjetaCredito): number {
-    return ((tarjeta.limiteMensual - tarjeta.saldoDisponible) / tarjeta.limiteMensual) * 100;
+    if (!tarjeta.limiteMensual || tarjeta.limiteMensual <= 0) return 0;
+    const usage = ((tarjeta.limiteMensual - tarjeta.saldoDisponible) / tarjeta.limiteMensual) * 100;
+    return isNaN(usage) ? 0 : Math.max(0, usage);
   }
 }

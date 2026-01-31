@@ -49,7 +49,7 @@ export class DashboardService {
         {
            id: 'tarjetas',
            label: 'Tarjetas',
-           translationKey: 'financierosTarjetas',
+           translationKey: 'nav.cards',
            icon: 'pi pi-credit-card',
            route: '/financieros/tarjetas'
         },
@@ -58,7 +58,7 @@ export class DashboardService {
            label: 'Cuentas',
            translationKey: 'nav.accounts',
            icon: 'pi pi-building',
-           route: '/cuentas'
+           route: '/financieros/cuentas'
         },
         {
           id: 'documentos',

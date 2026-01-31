@@ -31,7 +31,11 @@ export const routes: Routes = [
       },
       { 
         path: 'financieros/tarjetas', 
-        loadComponent: () => import('./features/financieros-tarjetas/financieros-tarjetas.component').then(m => m.FinancierosTarjetasComponent)
+        loadComponent: () => import('./pages/tarjetas/tarjetas-list.component').then(m => m.TarjetasListComponent)
+      },
+      { 
+        path: 'financieros/cuentas', 
+        loadComponent: () => import('./pages/cuentas/cuentas-list.component').then(m => m.CuentasListComponent)
       },
       { 
         path: 'pagos', 

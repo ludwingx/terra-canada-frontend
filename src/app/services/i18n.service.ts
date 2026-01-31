@@ -26,7 +26,7 @@ export class I18nService {
     'nav.payments': { fr: 'Paiements', es: 'Pagos' },
     'nav.suppliers': { fr: 'Fournisseurs', es: 'Proveedores' },
     'nav.clients': { fr: 'Clients', es: 'Clientes' },
-    'nav.cards': { fr: 'Cartes de crédit', es: 'Tarjetas de crédito' },
+    'nav.cards': { fr: 'Cartes de crédit', es: 'Tarjetas' },
     'nav.accounts': { fr: 'Comptes bancaires', es: 'Cuentas bancarias' },
     'nav.documents': { fr: 'Documents', es: 'Documentos' },
     'nav.emails': { fr: 'Courriels', es: 'Correos' },

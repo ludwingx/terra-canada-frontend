@@ -26,7 +26,7 @@ export class CuentasService {
     const params = clienteId ? { cliente_id: clienteId } : {};
     return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`cuentas`, params).pipe(
       map(res => {
-        const rawData = res.data?.data?.data || res.data?.data || res.data || [];
+        const rawData = (res as any)?.data?.data?.data || (res as any)?.data?.data || (res as any)?.data || res;
         return (Array.isArray(rawData) ? rawData : []).map(c => this.mapCuenta(c));
       })
     );
