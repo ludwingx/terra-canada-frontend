@@ -234,6 +234,10 @@ export interface Activity {
   currency?: string;
   paymentStatus?: 'PAGADO' | 'POR_PAGAR' | string; // Nuevo: estado de pago
   verified?: boolean; // Nuevo: flag de verificación cruda
+  loanNumber?: string;
+  cardDetails?: string;
+  recordedBy?: string;
+  email?: string;
   status: 'completado' | 'sin-verificacion'; // Mantiene estado derivado para compatibilidad
 }
 

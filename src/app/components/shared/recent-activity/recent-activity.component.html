@@ -27,16 +27,16 @@
       <tbody>
         <tr *ngFor="let activity of activities">
           <td>{{ activity.date }}</td>
-          <td>{{ activity.client || '-' }}</td> <!-- Client before Supplier -->
-          <td>{{ activity.user }}</td> <!-- Supplier/User -->
+          <td>{{ activity.client }}</td>
+          <td>{{ activity.user }}</td>
           <td>
              <span *ngIf="activity.amount">
-              {{ activity.amount }} $ <!-- Format as 100,50 $ -->
+              {{ activity.amount }} {{ activity.currency }}
             </span>
             <span *ngIf="!activity.amount">-</span>
           </td>
-          <td>-</td> <!-- Needs Loan Number field -->
-          <td>.... .... .... -5425</td> <!-- Mock Map -->
+          <td>{{ activity.loanNumber }}</td>
+          <td>{{ activity.cardDetails }}</td>
           <td>
             <span class="status-badge" [ngClass]="getPaymentStatusClass(activity.paymentStatus)">
               {{ getPaymentStatusLabel(activity.paymentStatus) }}
@@ -47,14 +47,10 @@
                 {{ activity.verified ? 'Si' : 'No' }}
              </span>
           </td>
-          <td><i class="pi pi-envelope text-red-500"></i></td> <!-- Mock Email Icon -->
-          <td>Susan</td> <!-- Mock Recorded By -->
+          <td><i class="pi pi-envelope" [class.text-green-500]="activity.email" [class.text-gray-400]="!activity.email"></i></td>
+          <td>{{ activity.recordedBy }}</td>
           <td>
-            <div class="action-buttons">
-                <button class="btn-icon"><i class="pi pi-eye"></i></button>
-                <button class="btn-icon"><i class="pi pi-pencil"></i></button>
-                <button class="btn-icon"><i class="pi pi-trash"></i></button>
-            </div>
+            {{ activity.action }}
           </td>
         </tr>
       </tbody>

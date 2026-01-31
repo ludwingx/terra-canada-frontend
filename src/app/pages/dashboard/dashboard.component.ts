@@ -115,19 +115,32 @@ export class DashboardComponent implements OnInit {
   }
 
   private mapActivities(pagos: Pago[]): void {
-    this.activities = pagos.map(p => ({
-      id: p.id.toString(),
-      date: this.formatDate(p.fechaCreacion),
-      time: new Date(p.fechaCreacion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      user: p.proveedor?.nombre || 'Proveedor',
-      client: p.clientes?.[0]?.cliente?.nombre,
-      action: this.i18n.t('payments.pago') + ' ' + (p.pagado ? this.i18n.t('status.paid').toLowerCase() : this.i18n.t('status.pending').toLowerCase()),
-      amount: p.monto,
-      currency: p.moneda,
-      paymentStatus: p.pagado ? 'PAGADO' : 'POR_PAGAR',
-      verified: p.verificado,
-      status: p.verificado ? 'completado' : 'sin-verificacion'
-    }));
+    this.activities = pagos.map(p => {
+      // Get card or account details
+      let details = '-';
+      if (p.tarjeta) {
+        details = `.... .... .... ${p.tarjeta.ultimos4Digitos}`;
+      } else if (p.cuentaBancaria) {
+        details = `${p.cuentaBancaria.nombreBanco} ****${p.cuentaBancaria.ultimos4Digitos}`;
+      }
+
+      return {
+        id: p.id.toString(),
+        date: this.formatDate(p.fechaCreacion),
+        time: new Date(p.fechaCreacion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        user: p.proveedor?.nombre || 'Proveedor',
+        client: p.clientes?.[0]?.cliente?.nombre || '-',
+        action: this.i18n.t('payments.pago') + ' ' + (p.pagado ? this.i18n.t('status.paid').toLowerCase() : this.i18n.t('status.pending').toLowerCase()),
+        amount: p.monto,
+        currency: p.moneda,
+        paymentStatus: p.pagado ? 'PAGADO' : 'POR_PAGAR',
+        verified: p.verificado,
+        loanNumber: p.codigoReserva || '-',
+        cardDetails: details,
+        recordedBy: p.usuario?.nombreCompleto || p.usuario?.nombreUsuario || '-',
+        status: p.verificado ? 'completado' : 'sin-verificacion'
+      };
+    });
   }
 
   private computeKpisFromPagos(pagos: Pago[]): DashboardKPIs {
