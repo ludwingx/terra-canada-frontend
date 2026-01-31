@@ -23,8 +23,8 @@ import { TarjetasService } from '../../services/tarjetas.service';
         </button>
       </div>
 
-      <!-- Cards Grid -->
-      <div class="cards-container relative">
+      <!-- Table Card -->
+      <div class="card relative">
         @if (loading()) {
           <div class="loading-overlay">
             <div class="spinner"></div>
@@ -32,62 +32,74 @@ import { TarjetasService } from '../../services/tarjetas.service';
           </div>
         }
 
-        <div class="cards-grid">
-          @for (tarjeta of tarjetas(); track tarjeta.id) {
-            <div class="credit-card" [class.inactive]="!tarjeta.activo">
-              <div class="card-header">
-                <div class="card-type">
-                  <span class="card-icon">💳</span>
-                  <span>{{ tarjeta.tipoTarjeta || 'Visa' }}</span>
-                </div>
-                <div class="card-currency">{{ tarjeta.moneda }}</div>
-              </div>
-
-              <div class="card-number">
-                **** **** **** {{ tarjeta.ultimos4Digitos }}
-              </div>
-
-              <div class="card-holder">
-                {{ tarjeta.nombreTitular }}
-              </div>
-
-              <div class="card-balance">
-                <div class="balance-info">
-                  <span class="balance-label">{{ i18n.t('cards.available') }}</span>
-                  <span class="balance-value" [class.low]="getUsagePercentage(tarjeta) > 80">
-                    {{ formatCurrency(tarjeta.saldoDisponible, tarjeta.moneda) }}
-                  </span>
-                </div>
-                <div class="balance-bar">
-                  <div 
-                    class="balance-fill" 
-                    [style.width.%]="100 - getUsagePercentage(tarjeta)"
-                    [class.low]="getUsagePercentage(tarjeta) > 80"
-                  ></div>
-                </div>
-                <div class="balance-limit">
-                  {{ i18n.t('cards.limit') }}: {{ formatCurrency(tarjeta.limiteMensual, tarjeta.moneda) }}
-                </div>
-              </div>
-
-              <div class="card-actions">
-                <button class="btn btn-secondary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.view') }}</button>
-                <button class="btn btn-primary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.edit') }}</button>
-              </div>
-
-              @if (!tarjeta.activo) {
-                <div class="inactive-overlay">
-                  <span>{{ i18n.t('status.inactive') }}</span>
-                </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ i18n.t('cards.holder') }}</th>
+                <th>{{ i18n.t('cards.type') }}</th>
+                <th>{{ i18n.t('cards.last4') }}</th>
+                <th>{{ i18n.t('payments.currency') }}</th>
+                <th>{{ i18n.t('cards.limit') }}</th>
+                <th>{{ i18n.t('cards.available') }}</th>
+                <th>{{ i18n.t('cards.usage') }}</th>
+                <th>{{ i18n.t('payments.status') }}</th>
+                <th>{{ i18n.t('payments.actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (tarjeta of tarjetas(); track tarjeta.id) {
+                <tr [class.inactive-row]="!tarjeta.activo">
+                  <td>
+                    <div class="holder-cell">
+                      <span class="card-icon-sm">💳</span>
+                      <strong>{{ tarjeta.nombreTitular }}</strong>
+                    </div>
+                  </td>
+                  <td>{{ tarjeta.tipoTarjeta || 'Visa' }}</td>
+                  <td><code>****{{ tarjeta.ultimos4Digitos }}</code></td>
+                  <td>
+                    <span class="badge badge-paid">{{ tarjeta.moneda }}</span>
+                  </td>
+                  <td>{{ formatCurrency(tarjeta.limiteMensual, tarjeta.moneda) }}</td>
+                  <td>
+                    <span [class.low-balance]="getUsagePercentage(tarjeta) > 80">
+                      {{ formatCurrency(tarjeta.saldoDisponible, tarjeta.moneda) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="usage-mini-bar">
+                      <div 
+                        class="usage-fill" 
+                        [style.width.%]="getUsagePercentage(tarjeta)"
+                        [class.critical]="getUsagePercentage(tarjeta) > 80"
+                      ></div>
+                    </div>
+                  </td>
+                  <td>
+                    @if (tarjeta.activo) {
+                      <span class="badge badge-paid">{{ i18n.t('status.active') }}</span>
+                    } @else {
+                      <span class="badge badge-inactive">{{ i18n.t('status.inactive') }}</span>
+                    }
+                  </td>
+                  <td>
+                    <div class="actions-cell">
+                      <button class="btn btn-secondary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.edit') }}</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                @if (!loading()) {
+                  <tr>
+                    <td colspan="9" class="text-center text-muted">
+                      {{ i18n.t('msg.no_data') }}
+                    </td>
+                  </tr>
+                }
               }
-            </div>
-          } @empty {
-            @if (!loading()) {
-               <div class="no-data card">
-                <p class="text-muted text-center">{{ i18n.t('msg.no_data') }}</p>
-              </div>
-            }
-          }
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -102,10 +114,6 @@ import { TarjetasService } from '../../services/tarjetas.service';
   styles: [`
     .tarjetas-page {
       position: relative;
-    }
-    .cards-container {
-      position: relative;
-      min-height: 200px;
     }
     .loading-overlay {
       position: absolute;

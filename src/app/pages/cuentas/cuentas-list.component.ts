@@ -44,7 +44,7 @@ import { CuentasService } from '../../services/cuentas.service';
             </thead>
             <tbody>
               @for (cuenta of cuentas(); track cuenta.id) {
-                <tr>
+                <tr [class.inactive-row]="!cuenta.activo">
                   <td>
                     <div class="bank-name">
                       <span class="bank-icon">🏦</span>
@@ -65,7 +65,6 @@ import { CuentasService } from '../../services/cuentas.service';
                   </td>
                   <td>
                     <div class="actions-cell">
-                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openViewModal(cuenta)">👁️</button>
                       <button class="btn btn-secondary btn-sm" (click)="openEditModal(cuenta)">{{ i18n.t('actions.edit') }}</button>
                     </div>
                   </td>
@@ -138,6 +137,10 @@ import { CuentasService } from '../../services/cuentas.service';
     .actions-cell {
       display: flex;
       gap: var(--spacing-sm);
+    }
+    .inactive-row {
+      opacity: 0.6;
+      background-color: var(--bg-hover);
     }
   `]
 })

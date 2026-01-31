@@ -119,6 +119,7 @@ export class I18nService {
     'cards.available': { fr: 'Disponible', es: 'Disponible' },
     'cards.type': { fr: 'Type', es: 'Tipo' },
     'cards.count': { fr: 'cartes', es: 'tarjetas' },
+    'cards.usage': { fr: 'Utilisation', es: 'Uso' },
     'cards.holder_placeholder': { fr: 'Nom du titulaire', es: 'Nombre del titular' },
 
     // Cuentas bancarias
