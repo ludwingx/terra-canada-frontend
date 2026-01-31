@@ -11,12 +11,13 @@ import { CorreosListComponent } from './pages/correos/correos-list.component';
 import { UsuariosListComponent } from './pages/usuarios/usuarios-list.component';
 import { AuditoriaListComponent } from './pages/auditoria/auditoria-list.component';
 import { authGuard } from './guards/auth.guard';
+import { guestGuard } from './guards/guest.guard';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { RegisterComponent } from './pages/auth/register/register.component';
 
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
+  { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
+  { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
   {
     path: '',
     component: MainLayoutComponent,

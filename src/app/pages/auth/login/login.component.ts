@@ -20,7 +20,7 @@ export class LoginComponent {
   errorMessage = '';
 
   form = this.fb.group({
-    username: ['', [Validators.required]],
+    nombre_usuario: ['', [Validators.required]],
     password: ['', [Validators.required]]
   });
 
@@ -31,7 +31,7 @@ export class LoginComponent {
 
     const credentials = this.form.getRawValue();
     this.auth.login({
-      username: String(credentials.username || ''),
+      nombre_usuario: String(credentials.nombre_usuario || ''),
       password: String(credentials.password || '')
     }).subscribe({
       next: () => {

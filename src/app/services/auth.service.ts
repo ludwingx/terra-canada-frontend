@@ -13,12 +13,12 @@ export class AuthService {
   
   currentUser = signal<Usuario | null>(null);
 
-  login(credentials: {username: string, password: string}): Observable<any> {
-    return this.api.post<{success: boolean, data: {token: string, user: Usuario}}>(`auth/login`, credentials).pipe(
+  login(credentials: { nombre_usuario: string; password: string }): Observable<{ token: string; usuario: Usuario }> {
+    return this.api.post<{ estado: boolean; data: { token: string; usuario: Usuario } }>(`auth/login`, credentials).pipe(
       tap(res => {
-        if (res.success && isPlatformBrowser(this.platformId)) {
+        if (res.estado && isPlatformBrowser(this.platformId)) {
           localStorage.setItem('token', res.data.token);
-          this.currentUser.set(res.data.user);
+          this.currentUser.set(res.data.usuario);
         }
       }),
       map(res => res.data)
