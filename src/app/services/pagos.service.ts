@@ -157,31 +157,6 @@ export class PagosService {
     return currentUser?.id;
   }
 
-  private toCreatePagoPayload(pago: any): any {
-    return {
-      proveedor_id: pago?.proveedor_id ?? pago?.proveedorId,
-      usuario_id: this.getUsuarioIdForAudit(pago),
-      codigo_reserva: pago?.codigo_reserva ?? pago?.codigoReserva,
-      monto: pago?.monto,
-      moneda: pago?.moneda,
-      tipo_medio_pago: pago?.tipo_medio_pago ?? pago?.tipoMedioPago,
-      tarjeta_id: pago?.tarjeta_id ?? pago?.tarjetaId ?? null,
-      cuenta_bancaria_id: pago?.cuenta_bancaria_id ?? pago?.cuentaBancariaId ?? null,
-      clientes_ids: pago?.clientes_ids ?? pago?.clientesIds ?? [],
-      descripcion: pago?.descripcion ?? null,
-      fecha_esperada_debito: pago?.fecha_esperada_debito ?? pago?.fechaEsperadaDebito ?? null
-    };
-  }
-
-  private toUpdatePagoPayload(update: any): any {
-    return {
-      monto: update?.monto,
-      descripcion: update?.descripcion ?? null,
-      fecha_esperada_debito: update?.fecha_esperada_debito ?? update?.fechaEsperadaDebito ?? null,
-      usuario_id: this.getUsuarioIdForAudit(update)
-    };
-  }
-
   getPagos(filters?: any): Observable<Pago[]> {
     return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`pagos`, filters).pipe(
       map(res => (res.data || []).map(p => this.mapPago(p)))
@@ -189,16 +164,61 @@ export class PagosService {
   }
 
   createPago(pago: any): Observable<Pago> {
-    const payload = this.toCreatePagoPayload(pago);
-    return this.api.post<{success: boolean, data: Pago}>(`pagos`, payload).pipe(
-      map(res => res.data)
+    const payload = {
+      codigo_reserva: pago.codigoReserva || pago.codigo_reserva,
+      proveedor_id: Number(pago.proveedorId || pago.proveedor_id),
+      monto: Number(pago.monto),
+      moneda: pago.moneda,
+      tipo_medio_pago: pago.tipoMedioPago || pago.tipo_medio_pago,
+      tarjeta_id: pago.tarjetaId || pago.tarjeta_id || null,
+      cuenta_bancaria_id: pago.cuentaBancariaId || pago.cuenta_bancaria_id || null,
+      descripcion: pago.descripcion || null,
+      fecha_esperada_debito: pago.fechaEsperadaDebito || pago.fecha_esperada_debito || null,
+      clientes_ids: Array.isArray(pago.clientesIds) ? pago.clientesIds : (pago.clientes_ids || []),
+      usuario_id: this.getUsuarioIdForAudit(pago)
+    };
+
+    return this.api.post<{ success: boolean; data: any }>(`pagos`, payload).pipe(
+      map(res => this.mapPago(res.data))
     );
   }
 
-  updatePago(id: number, update: any): Observable<Pago> {
-    const payload = this.toUpdatePagoPayload(update);
-    return this.api.put<{success: boolean, data: Pago}>(`pagos/${id}`, payload).pipe(
-      map(res => res.data)
+  updatePago(id: number, pago: any): Observable<Pago> {
+    const payload: any = {
+      usuario_id: this.getUsuarioIdForAudit(pago)
+    };
+
+    if (pago.codigoReserva !== undefined || pago.codigo_reserva !== undefined) 
+      payload.codigo_reserva = pago.codigoReserva ?? pago.codigo_reserva;
+    
+    if (pago.proveedorId !== undefined || pago.proveedor_id !== undefined) 
+      payload.proveedor_id = Number(pago.proveedorId ?? pago.proveedor_id);
+    
+    if (pago.monto !== undefined) payload.monto = Number(pago.monto);
+    if (pago.moneda !== undefined) payload.moneda = pago.moneda;
+    
+    if (pago.tipoMedioPago !== undefined || pago.tipo_medio_pago !== undefined) 
+      payload.tipo_medio_pago = pago.tipoMedioPago ?? pago.tipo_medio_pago;
+    
+    if (pago.tarjetaId !== undefined || pago.tarjeta_id !== undefined) 
+      payload.tarjeta_id = pago.tarjetaId ?? pago.tarjeta_id;
+    
+    if (pago.cuentaBancariaId !== undefined || pago.cuenta_bancaria_id !== undefined) 
+      payload.cuenta_bancaria_id = pago.cuentaBancariaId ?? pago.cuenta_bancaria_id;
+    
+    if (pago.descripcion !== undefined) payload.descripcion = pago.descripcion;
+    
+    if (pago.fechaEsperadaDebito !== undefined || pago.fecha_esperada_debito !== undefined) 
+      payload.fecha_esperada_debito = pago.fechaEsperadaDebito ?? pago.fecha_esperada_debito;
+    
+    if (pago.pagado !== undefined) payload.pagado = Boolean(pago.pagado);
+    if (pago.verificado !== undefined) payload.verificado = Boolean(pago.verificado);
+    
+    if (pago.clientesIds !== undefined || pago.clientes_ids !== undefined) 
+      payload.clientes_ids = pago.clientesIds ?? pago.clientes_ids;
+
+    return this.api.put<{ success: boolean; data: any }>(`pagos/${id}`, payload).pipe(
+      map(res => this.mapPago(res.data))
     );
   }
 

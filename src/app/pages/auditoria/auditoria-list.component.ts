@@ -26,7 +26,7 @@ import { AuditoriaService } from '../../services/auditoria.service';
       <!-- Filters -->
       <div class="card mb-3">
         <div class="filters-row">
-          <select class="form-control" [(ngModel)]="filterType" (ngModelChange)="onFilterChange()" style="max-width: 200px;">
+          <select class="form-control" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" style="max-width: 200px;">
             <option value="">{{ i18n.t('audit.all_types') }}</option>
             <option value="INICIO_SESION">{{ i18n.t('audit.type_login') }}</option>
             <option value="CREAR">{{ i18n.t('audit.type_create') }}</option>
@@ -35,7 +35,7 @@ import { AuditoriaService } from '../../services/auditoria.service';
             <option value="VERIFICAR_PAGO">{{ i18n.t('audit.type_verify') }}</option>
             <option value="ENVIAR_CORREO">{{ i18n.t('audit.type_email') }}</option>
           </select>
-          <input type="date" class="form-control" [(ngModel)]="filterDate" (ngModelChange)="onFilterChange()" style="max-width: 180px;">
+          <input type="date" class="form-control" [ngModel]="filterDate()" (ngModelChange)="filterDate.set($event)" style="max-width: 180px;">
         </div>
       </div>
 
@@ -218,8 +218,8 @@ export class AuditoriaListComponent implements OnInit {
   i18n = inject(I18nService);
   private auditoriaService = inject(AuditoriaService);
   
-  filterType = '';
-  filterDate = '';
+  filterType = signal('');
+  filterDate = signal('');
   
   loading = signal(false);
   eventos = signal<Evento[]>([]);
@@ -246,13 +246,13 @@ export class AuditoriaListComponent implements OnInit {
   }
 
   onFilterChange(): void {
-    // Triggers computed re-evaluation through dependency tracking
+    // Computed automatically re-evaluates
   }
 
   filteredEventos = computed(() => {
     const list = this.eventos();
-    const type = this.filterType;
-    const date = this.filterDate;
+    const type = this.filterType();
+    const date = this.filterDate();
     
     return list.filter(e => {
       const matchesType = !type || e.tipoEvento === type;

@@ -1,0 +1,4167 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Terra Canada - Sistema de Gestión de Pagos",
+    "version": "1.0.0",
+    "description": "\nAPI RESTful para gestionar pagos a proveedores de servicios turísticos.\n\n## Características principales:\n- Autenticación JWT con control de roles (ADMIN, SUPERVISOR, EQUIPO)\n- Gestión de pagos con tarjetas de crédito y cuentas bancarias\n- Control automático de saldo de tarjetas\n- Procesamiento de documentos (facturas y extractos)\n- Integración con N8N para automatización\n- Sistema de auditoría completo\n- Análisis y reportes de negocio\n\n## Autenticación:\nTodos los endpoints requieren autenticación JWT, excepto /auth/login.\nIncluir el token en el header: Authorization: Bearer {token}\n      ",
+    "contact": {
+      "name": "Terra Canada",
+      "email": "tech@terracanada.com"
+    },
+    "license": {
+      "name": "Privado",
+      "url": "https://terracanada.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Servidor de desarrollo"
+    },
+    {
+      "url": "https://api.terracanada.com/api/v1",
+      "description": "Servidor de producción"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Token de autenticación"
+      },
+      "n8nToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-n8n-token",
+        "description": "Token de autenticación para webhooks de N8N"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "Código HTTP de error"
+          },
+          "estado": {
+            "type": "boolean",
+            "description": "Estado de la petición (siempre false en errores)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje descriptivo del error"
+          },
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "description": "Datos adicionales (null en errores)"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Detalles de errores de validación"
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "Código HTTP de éxito"
+          },
+          "estado": {
+            "type": "boolean",
+            "description": "Estado de la petición (siempre true en éxito)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje descriptivo del éxito"
+          },
+          "data": {
+            "type": "object",
+            "description": "Datos de la respuesta"
+          }
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Token de autenticación faltante o inválido",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": 401,
+              "estado": false,
+              "message": "No autorizado: Token no proporcionado",
+              "data": null
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "Usuario no tiene permisos suficientes",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": 403,
+              "estado": false,
+              "message": "Acceso denegado: Se requiere rol ADMIN",
+              "data": null
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "Recurso no encontrado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": 404,
+              "estado": false,
+              "message": "Recurso no encontrado",
+              "data": null
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Error de validación de datos",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": 400,
+              "estado": false,
+              "message": "Error de validación",
+              "data": null,
+              "errors": [
+                {
+                  "field": "email",
+                  "message": "Email inválido"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Autenticación",
+      "description": "Endpoints de autenticación y autorización"
+    },
+    {
+      "name": "Usuarios",
+      "description": "Gestión de usuarios del sistema"
+    },
+    {
+      "name": "Roles",
+      "description": "Gestión de roles y permisos"
+    },
+    {
+      "name": "Servicios",
+      "description": "Catálogo de servicios turísticos"
+    },
+    {
+      "name": "Proveedores",
+      "description": "Gestión de proveedores de servicios"
+    },
+    {
+      "name": "Clientes",
+      "description": "Gestión de clientes (hoteles)"
+    },
+    {
+      "name": "Tarjetas",
+      "description": "Gestión de tarjetas de crédito"
+    },
+    {
+      "name": "Cuentas Bancarias",
+      "description": "Gestión de cuentas bancarias"
+    },
+    {
+      "name": "Pagos",
+      "description": "Gestión de pagos (CORE del sistema)"
+    },
+    {
+      "name": "Documentos",
+      "description": "Gestión de documentos (facturas y extractos)"
+    },
+    {
+      "name": "Correos",
+      "description": "Gestión y envío de correos a proveedores"
+    },
+    {
+      "name": "Análisis",
+      "description": "Análisis, reportes y dashboards"
+    },
+    {
+      "name": "Eventos",
+      "description": "Auditoría de eventos del sistema"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhooks para integración con N8N"
+    },
+    {
+      "name": "Documentos Pago",
+      "description": "Endpoints para procesar documentos (PDFs) con webhooks de N8N.\n\n## 📋 FLUJO GENERAL\n1. El Frontend envía un PDF (base64) al endpoint\n2. El Backend obtiene los datos necesarios y los envía al webhook de N8N\n3. N8N procesa el documento y responde con código 200 o 400\n4. El Backend retorna la respuesta del webhook al Frontend\n5. El Frontend usa pagos_put() para actualizar el estado (si aplica)\n\n## 🔗 WEBHOOKS\n- documento_pago: https://n8n.salazargroup.cloud/webhook/documento_pago\n- docu (facturas/banco): https://n8n.salazargroup.cloud/webhook/docu\n"
+    }
+  ],
+  "paths": {
+    "/analisis/dashboard": {
+      "get": {
+        "summary": "Obtener dashboard con estadísticas generales",
+        "tags": [
+          "Análisis"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard con estadísticas"
+          }
+        }
+      }
+    },
+    "/analisis/reportes/pagos": {
+      "get": {
+        "summary": "Generar reporte de pagos",
+        "tags": [
+          "Análisis"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "fecha_desde",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fecha_hasta",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "proveedor_id",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte generado"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Iniciar sesión",
+        "tags": [
+          "Autenticación"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Nombre de usuario o correo electrónico",
+                    "example": "admin"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "description": "Contraseña del usuario",
+                    "example": "password123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login exitoso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "estado": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Login exitoso"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "description": "JWT token de autenticación"
+                        },
+                        "user": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "nombre_usuario": {
+                              "type": "string"
+                            },
+                            "nombre_completo": {
+                              "type": "string"
+                            },
+                            "correo": {
+                              "type": "string"
+                            },
+                            "rol": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer"
+                                },
+                                "nombre": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Obtener información del usuario autenticado",
+        "tags": [
+          "Autenticación"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario obtenido exitosamente"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/clientes": {
+      "get": {
+        "summary": "Listar todos los clientes",
+        "description": "Obtiene una lista de todos los clientes registrados",
+        "tags": [
+          "Clientes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de clientes obtenida exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un nuevo cliente",
+        "description": "Registra un nuevo cliente en el sistema",
+        "tags": [
+          "Clientes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Juan Pérez"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "juan.perez@example.com"
+                  },
+                  "telefono": {
+                    "type": "string",
+                    "example": "+1234567890"
+                  },
+                  "ubicacion": {
+                    "type": "string",
+                    "example": "123 Main St, Toronto ON"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional, por defecto usa token)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cliente creado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          }
+        }
+      }
+    },
+    "/clientes/{id}": {
+      "get": {
+        "summary": "Obtener un cliente por ID",
+        "description": "Obtiene la información detallada de un cliente específico",
+        "tags": [
+          "Clientes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del cliente"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cliente encontrado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un cliente existente",
+        "description": "Actualiza la información de un cliente",
+        "tags": [
+          "Clientes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del cliente"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "telefono": {
+                    "type": "string"
+                  },
+                  "ubicacion": {
+                    "type": "string"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional, por defecto usa token)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cliente actualizado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un cliente",
+        "description": "Elimina un cliente del sistema",
+        "tags": [
+          "Clientes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del cliente"
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional, por defecto usa token)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cliente eliminado exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          }
+        }
+      }
+    },
+    "/correos": {
+      "get": {
+        "summary": "Listar correos con filtros opcionales",
+        "tags": [
+          "Correos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "estado",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BORRADOR",
+                "ENVIADO"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "proveedor_id",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fecha_desde",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fecha_hasta",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de correos"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un correo manualmente",
+        "description": "Permite crear un correo seleccionando manualmente los pagos a incluir",
+        "tags": [
+          "Correos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "proveedor_id",
+                  "correo_seleccionado",
+                  "asunto",
+                  "cuerpo",
+                  "pago_ids"
+                ],
+                "properties": {
+                  "proveedor_id": {
+                    "type": "integer"
+                  },
+                  "correo_seleccionado": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Uno de los correos del proveedor"
+                  },
+                  "asunto": {
+                    "type": "string"
+                  },
+                  "cuerpo": {
+                    "type": "string"
+                  },
+                  "pago_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Correo creado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          }
+        }
+      }
+    },
+    "/correos/pendientes": {
+      "get": {
+        "summary": "Obtener correos pendientes de envío (BORRADOR)",
+        "tags": [
+          "Correos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de correos pendientes"
+          }
+        }
+      }
+    },
+    "/correos/generar": {
+      "post": {
+        "summary": "Generar correos automáticamente para pagos pendientes",
+        "description": "Busca todos los pagos con pagado=TRUE y gmail_enviado=FALSE,\nlos agrupa por proveedor y genera un borrador de correo por cada proveedor.\n",
+        "tags": [
+          "Correos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "proveedor_id": {
+                    "type": "integer",
+                    "description": "Opcionalmente filtrar por un proveedor específico"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "No hay pagos pendientes de envío"
+          },
+          "201": {
+            "description": "Correos generados exitosamente"
+          }
+        }
+      }
+    },
+    "/correos/{id}": {
+      "put": {
+        "summary": "Actualizar un borrador de correo",
+        "description": "Solo se pueden editar correos en estado BORRADOR",
+        "tags": [
+          "Correos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "correo_seleccionado": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "asunto": {
+                    "type": "string"
+                  },
+                  "cuerpo": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Correo actualizado exitosamente"
+          },
+          "404": {
+            "description": "Correo no encontrado"
+          },
+          "409": {
+            "description": "El correo ya fue enviado"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un borrador de correo",
+        "description": "Solo se pueden eliminar correos en estado BORRADOR",
+        "tags": [
+          "Correos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Correo eliminado exitosamente"
+          },
+          "404": {
+            "description": "Correo no encontrado"
+          },
+          "409": {
+            "description": "No se pueden eliminar correos enviados"
+          }
+        }
+      }
+    },
+    "/correos/{id}/enviar": {
+      "post": {
+        "summary": "Enviar un correo",
+        "description": "Cambia el estado del correo a ENVIADO, envía el correo via N8N\ny actualiza gmail_enviado=TRUE en todos los pagos incluidos.\n",
+        "tags": [
+          "Correos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "asunto": {
+                    "type": "string",
+                    "description": "Edición de último momento del asunto"
+                  },
+                  "cuerpo": {
+                    "type": "string",
+                    "description": "Edición de último momento del cuerpo"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Correo enviado exitosamente"
+          },
+          "404": {
+            "description": "Correo no encontrado"
+          },
+          "409": {
+            "description": "El correo ya fue enviado"
+          },
+          "503": {
+            "description": "Error al comunicarse con el servicio de correo"
+          }
+        }
+      }
+    },
+    "/cuentas": {
+      "get": {
+        "summary": "Listar todas las cuentas bancarias",
+        "description": "Obtiene una lista de todas las cuentas bancarias registradas",
+        "tags": [
+          "Cuentas Bancarias"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de cuentas obtenida exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear una nueva cuenta bancaria",
+        "description": "Registra una nueva cuenta bancaria usando funciones PostgreSQL",
+        "tags": [
+          "Cuentas Bancarias"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre_banco",
+                  "nombre_cuenta",
+                  "ultimos_4_digitos",
+                  "moneda"
+                ],
+                "properties": {
+                  "nombre_banco": {
+                    "type": "string",
+                    "example": "TD Canada Trust",
+                    "description": "Nombre del banco"
+                  },
+                  "nombre_cuenta": {
+                    "type": "string",
+                    "example": "Business Checking Account",
+                    "description": "Descripción o nombre de la cuenta"
+                  },
+                  "ultimos_4_digitos": {
+                    "type": "string",
+                    "pattern": "^\\\\d{4}$",
+                    "example": "5678",
+                    "description": "Últimos 4 dígitos de la cuenta (exactamente 4 números)"
+                  },
+                  "moneda": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "CAD"
+                    ],
+                    "example": "CAD",
+                    "description": "Moneda de la cuenta"
+                  },
+                  "activo": {
+                    "type": "boolean",
+                    "example": true,
+                    "description": "Estado activo de la cuenta"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cuenta creada exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          }
+        }
+      }
+    },
+    "/cuentas/{id}": {
+      "get": {
+        "summary": "Obtener una cuenta bancaria por ID",
+        "description": "Obtiene la información detallada de una cuenta bancaria específica",
+        "tags": [
+          "Cuentas Bancarias"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la cuenta"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cuenta encontrada"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Cuenta no encontrada"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar una cuenta bancaria existente",
+        "description": "Actualiza la información de una cuenta bancaria usando funciones PostgreSQL",
+        "tags": [
+          "Cuentas Bancarias"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la cuenta"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre_banco": {
+                    "type": "string",
+                    "example": "Banco Nacional de Canadá",
+                    "description": "Nombre del banco"
+                  },
+                  "nombre_cuenta": {
+                    "type": "string",
+                    "example": "Premium Business Account",
+                    "description": "Descripción de la cuenta"
+                  },
+                  "activo": {
+                    "type": "boolean",
+                    "example": true,
+                    "description": "Estado activo"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cuenta actualizada exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Cuenta no encontrada"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar cuenta bancaria (soft delete)",
+        "description": "Desactiva una cuenta bancaria marcándola como inactiva",
+        "tags": [
+          "Cuentas Bancarias"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la cuenta"
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cuenta eliminada (desactivada) exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (solo ADMIN)"
+          },
+          "404": {
+            "description": "Cuenta no encontrada"
+          }
+        }
+      }
+    },
+    "/pagos/{id}/documento-estado": {
+      "post": {
+        "summary": "Enviar documento para cambiar estado de pago",
+        "description": "## 📋 FLUJO\n1. Front envía: id_pago, pdf (base64), y qué estado cambiar\n2. Back obtiene TODOS los datos del pago\n3. Back envía al webhook: `https://n8n.salazargroup.cloud/webhook/documento_pago`\n4. Webhook responde 200 o 400 con data adicional\n5. Back retorna esa respuesta EXACTA al front\n6. El webhook de N8N es quien usa `pagos_put()` para cambiar el estado\n\n## ⚠️ VALIDACIONES\n- No se puede verificar si el pago NO está marcado como pagado\n- Solo se puede especificar UNO: cambiar_pagado O cambiar_verificado\n\n## 📤 PAYLOAD QUE RECIBE EL WEBHOOK\n```json\n{\n  \"pago\": { ...todos los datos del pago... },\n  \"pdf\": \"base64...\",\n  \"accion\": \"MARCAR_PAGADO\" | \"MARCAR_VERIFICADO\",\n  \"cambiar_pagado\": true/false,\n  \"cambiar_verificado\": true/false,\n  \"timestamp\": \"2026-01-30T21:00:00Z\"\n}\n```\n",
+        "tags": [
+          "Documentos Pago"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del pago"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "pdf"
+                ],
+                "properties": {
+                  "pdf": {
+                    "type": "string",
+                    "description": "PDF del documento en base64",
+                    "example": "JVBERi0xLjQKJeLjz9MKMSAwIG9..."
+                  },
+                  "cambiar_pagado": {
+                    "type": "boolean",
+                    "description": "Si se quiere marcar el pago como PAGADO",
+                    "example": true
+                  },
+                  "cambiar_verificado": {
+                    "type": "boolean",
+                    "description": "Si se quiere marcar el pago como VERIFICADO (requiere que ya esté pagado)",
+                    "example": false
+                  }
+                }
+              },
+              "examples": {
+                "marcar_pagado": {
+                  "summary": "Marcar como pagado",
+                  "value": {
+                    "pdf": "JVBERi0xLjQK...",
+                    "cambiar_pagado": true
+                  }
+                },
+                "marcar_verificado": {
+                  "summary": "Marcar como verificado",
+                  "value": {
+                    "pdf": "JVBERi0xLjQK...",
+                    "cambiar_verificado": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook procesó correctamente el documento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "mensaje": {
+                      "type": "string",
+                      "example": "Documento procesado correctamente"
+                    },
+                    "codigo_generado": {
+                      "type": "string",
+                      "example": "DOC-2026-ABC123"
+                    },
+                    "data": {
+                      "type": "object",
+                      "description": "Data adicional del webhook"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error del webhook al procesar el documento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "mensaje": {
+                      "type": "string",
+                      "example": "Error al procesar el documento"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pago no encontrado"
+          },
+          "409": {
+            "description": "No se puede verificar un pago que no está pagado"
+          }
+        }
+      }
+    },
+    "/documentos": {
+      "get": {
+        "summary": "Obtener todos los documentos",
+        "description": "Retorna lista de todos los documentos con información del usuario que los subió\ny la cantidad de pagos vinculados.\n\n## 🗄️ FUNCIÓN PostgreSQL\n```sql\nSELECT documentos_get();\n```\n",
+        "tags": [
+          "Documentos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de documentos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Documentos obtenidos exitosamente"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "tipo_documento": {
+                            "type": "string",
+                            "enum": [
+                              "FACTURA",
+                              "DOCUMENTO_BANCO"
+                            ],
+                            "example": "FACTURA"
+                          },
+                          "nombre_archivo": {
+                            "type": "string",
+                            "example": "factura_RES-2026-001.pdf"
+                          },
+                          "url_documento": {
+                            "type": "string",
+                            "example": "https://storage.terracanada.com/facturas/2026/01/factura.pdf"
+                          },
+                          "usuario_subida": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer",
+                                "example": 2
+                              },
+                              "nombre_completo": {
+                                "type": "string",
+                                "example": "Juan Pérez"
+                              }
+                            }
+                          },
+                          "pagos_vinculados": {
+                            "type": "integer",
+                            "example": 3
+                          },
+                          "fecha_subida": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un nuevo documento",
+        "description": "Crea un nuevo documento en el sistema. Si se proporciona `pago_id`,\nse vincula automáticamente al pago especificado.\n\n## 🗄️ FUNCIÓN PostgreSQL\n```sql\nSELECT documentos_post(\n  'FACTURA',\n  'factura_RES-2026-001.pdf',\n  'https://storage.terracanada.com/facturas/2026/01/factura.pdf',\n  2,   -- usuario_id\n  10   -- pago_id (opcional)\n);\n```\n\n## ⚠️ VALIDACIONES\n- El usuario debe existir\n- Si se proporciona pago_id, el pago debe existir\n",
+        "tags": [
+          "Documentos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "tipo_documento",
+                  "nombre_archivo",
+                  "url_documento"
+                ],
+                "properties": {
+                  "tipo_documento": {
+                    "type": "string",
+                    "enum": [
+                      "FACTURA",
+                      "DOCUMENTO_BANCO"
+                    ],
+                    "description": "Tipo de documento",
+                    "example": "FACTURA"
+                  },
+                  "nombre_archivo": {
+                    "type": "string",
+                    "description": "Nombre del archivo",
+                    "example": "factura_RES-2026-001.pdf"
+                  },
+                  "url_documento": {
+                    "type": "string",
+                    "description": "URL donde está almacenado el documento",
+                    "example": "https://storage.terracanada.com/facturas/2026/01/factura.pdf"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "description": "ID del usuario que sube el documento/auditor (opcional)",
+                    "example": 2
+                  },
+                  "pago_id": {
+                    "type": "integer",
+                    "description": "ID del pago a vincular (opcional)",
+                    "example": 10
+                  }
+                }
+              },
+              "examples": {
+                "factura_con_pago": {
+                  "summary": "Factura vinculada a pago",
+                  "value": {
+                    "tipo_documento": "FACTURA",
+                    "nombre_archivo": "factura_RES-2026-001.pdf",
+                    "url_documento": "https://storage.terracanada.com/facturas/factura.pdf",
+                    "usuario_id": 2,
+                    "pago_id": 10
+                  }
+                },
+                "documento_banco": {
+                  "summary": "Documento de banco sin vincular",
+                  "value": {
+                    "tipo_documento": "DOCUMENTO_BANCO",
+                    "nombre_archivo": "extracto_enero_2026.pdf",
+                    "url_documento": "https://storage.terracanada.com/banco/extracto.pdf",
+                    "usuario_id": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Documento creado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "404": {
+            "description": "Usuario o pago no encontrado"
+          }
+        }
+      }
+    },
+    "/documentos/{id}": {
+      "get": {
+        "summary": "Obtener un documento específico",
+        "description": "Retorna un documento con información completa incluyendo los pagos vinculados.\n\n## 🗄️ FUNCIÓN PostgreSQL\n```sql\nSELECT documentos_get(1);\n```\n",
+        "tags": [
+          "Documentos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del documento",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documento encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Documento obtenido exitosamente"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "tipo_documento": {
+                          "type": "string",
+                          "example": "FACTURA"
+                        },
+                        "nombre_archivo": {
+                          "type": "string",
+                          "example": "factura_RES-2026-001.pdf"
+                        },
+                        "url_documento": {
+                          "type": "string",
+                          "example": "https://storage.terracanada.com/facturas/2026/01/factura.pdf"
+                        },
+                        "usuario_subida": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "nombre_completo": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pagos_vinculados": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "codigo_reserva": {
+                                "type": "string"
+                              },
+                              "monto": {
+                                "type": "number"
+                              },
+                              "pagado": {
+                                "type": "boolean"
+                              },
+                              "verificado": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        },
+                        "fecha_subida": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Documento no encontrado"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un documento",
+        "description": "Actualiza el nombre o URL de un documento existente.\nSolo se actualizan los campos proporcionados.\n\n## 🗄️ FUNCIÓN PostgreSQL\n```sql\nSELECT documentos_put(\n  1,                      -- id\n  'nuevo_nombre.pdf',     -- nombre_archivo (opcional)\n  'https://nueva.url/...' -- url_documento (opcional)\n);\n```\n",
+        "tags": [
+          "Documentos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del documento",
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre_archivo": {
+                    "type": "string",
+                    "description": "Nuevo nombre del archivo",
+                    "example": "factura_actualizada.pdf"
+                  },
+                  "url_documento": {
+                    "type": "string",
+                    "description": "Nueva URL del documento",
+                    "example": "https://storage.terracanada.com/nueva_url/factura.pdf"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "description": "ID del usuario auditor (opcional)",
+                    "example": 2
+                  }
+                }
+              },
+              "examples": {
+                "cambiar_nombre": {
+                  "summary": "Cambiar solo nombre",
+                  "value": {
+                    "nombre_archivo": "factura_corregida.pdf"
+                  }
+                },
+                "cambiar_url": {
+                  "summary": "Cambiar solo URL",
+                  "value": {
+                    "url_documento": "https://nueva.url/documento.pdf"
+                  }
+                },
+                "cambiar_ambos": {
+                  "summary": "Cambiar ambos campos",
+                  "value": {
+                    "nombre_archivo": "nuevo_nombre.pdf",
+                    "url_documento": "https://nueva.url/documento.pdf"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documento actualizado exitosamente"
+          },
+          "400": {
+            "description": "Debe proporcionar al menos un campo"
+          },
+          "404": {
+            "description": "Documento no encontrado"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un documento",
+        "description": "Elimina un documento y sus vinculaciones con pagos.\n\n## 🗄️ FUNCIÓN PostgreSQL\n```sql\nSELECT documentos_delete(1);\n```\n\n## ⚠️ RESTRICCIONES\n- No se puede eliminar si tiene pagos VERIFICADOS vinculados\n- Se eliminan automáticamente las vinculaciones con pagos no verificados\n",
+        "tags": [
+          "Documentos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del documento",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documento eliminado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Documento eliminado exitosamente"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "nombre_archivo": {
+                          "type": "string",
+                          "example": "factura_eliminada.pdf"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Documento no encontrado"
+          },
+          "409": {
+            "description": "No se puede eliminar, tiene pagos verificados vinculados"
+          }
+        }
+      }
+    },
+    "/eventos": {
+      "get": {
+        "summary": "Consultar auditoría/eventos del sistema",
+        "description": "Obtiene eventos de auditoría usando la función eventos_get de PostgreSQL con paginación",
+        "tags": [
+          "Eventos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tabla",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por tabla (actualmente no implementado en función PG)"
+          },
+          {
+            "in": "query",
+            "name": "tipo_evento",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por tipo de evento (actualmente no implementado en función PG)"
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por ID de usuario (actualmente no implementado en función PG)"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            },
+            "description": "Número máximo de eventos a retornar"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Número de eventos a saltar (para paginación)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de eventos con información de paginación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "estado": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Eventos obtenidos exitosamente"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "example": 150
+                    },
+                    "limite": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "example": 0
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/facturas/procesar": {
+      "post": {
+        "summary": "Procesar facturas enviando PDFs en base64 a N8N",
+        "description": "Envía hasta 5 facturas en formato PDF (base64) a N8N para procesamiento OCR.\nN8N extrae códigos de reserva y retorna los pagos encontrados.\n",
+        "tags": [
+          "Facturas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "archivos"
+                ],
+                "properties": {
+                  "archivos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "nombre",
+                        "tipo",
+                        "base64"
+                      ],
+                      "properties": {
+                        "nombre": {
+                          "type": "string",
+                          "example": "NA - 39331961285.2025-01-31.pdf"
+                        },
+                        "tipo": {
+                          "type": "string",
+                          "example": "application/pdf"
+                        },
+                        "base64": {
+                          "type": "string",
+                          "description": "Contenido del PDF en base64"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Facturas procesadas exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "estado": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Pagos encontrados"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "pagos_encontrados": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "cod": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error al procesar facturas"
+          },
+          "503": {
+            "description": "Servicio de procesamiento no disponible"
+          }
+        }
+      }
+    },
+    "/pagos": {
+      "get": {
+        "summary": "Listar pagos con filtros",
+        "tags": [
+          "Pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "proveedor_id",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "estado",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDIENTE",
+                "COMPLETADO",
+                "CANCELADO"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "fecha_desde",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fecha_hasta",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de pagos"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear nuevo pago",
+        "description": "Crea un pago usando funciones PostgreSQL. Descuenta automáticamente el saldo si es TARJETA.",
+        "tags": [
+          "Pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "proveedor_id",
+                  "usuario_id",
+                  "codigo_reserva",
+                  "monto",
+                  "moneda",
+                  "tipo_medio_pago"
+                ],
+                "properties": {
+                  "proveedor_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del proveedor activo"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario activo (opcional, por defecto el del token)"
+                  },
+                  "codigo_reserva": {
+                    "type": "string",
+                    "example": "RES-2026-004",
+                    "description": "Código único de reserva (1-50 caracteres)"
+                  },
+                  "monto": {
+                    "type": "number",
+                    "example": 500,
+                    "description": "Monto del pago (mayor a 0)"
+                  },
+                  "moneda": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "CAD"
+                    ],
+                    "example": "USD",
+                    "description": "Moneda del pago"
+                  },
+                  "tipo_medio_pago": {
+                    "type": "string",
+                    "enum": [
+                      "TARJETA",
+                      "CUENTA_BANCARIA"
+                    ],
+                    "example": "TARJETA",
+                    "description": "Tipo de medio de pago"
+                  },
+                  "tarjeta_id": {
+                    "type": "integer",
+                    "example": 1,
+                    "nullable": true,
+                    "description": "ID de tarjeta (obligatorio si tipo_medio_pago = TARJETA)"
+                  },
+                  "cuenta_bancaria_id": {
+                    "type": "integer",
+                    "example": 1,
+                    "nullable": true,
+                    "description": "ID de cuenta bancaria (obligatorio si tipo_medio_pago = CUENTA_BANCARIA)"
+                  },
+                  "clientes_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "example": [
+                      1,
+                      2
+                    ],
+                    "description": "Array de IDs de clientes asociados"
+                  },
+                  "descripcion": {
+                    "type": "string",
+                    "example": "Pago de servicio de guía turística",
+                    "nullable": true
+                  },
+                  "fecha_esperada_debito": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-02-15",
+                    "nullable": true,
+                    "description": "Fecha esperada de débito (YYYY-MM-DD)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pago creado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos o campo obligatorio faltante"
+          },
+          "404": {
+            "description": "Proveedor, usuario, tarjeta o cuenta no encontrados"
+          },
+          "409": {
+            "description": "Código de reserva duplicado o saldo insuficiente"
+          }
+        }
+      }
+    },
+    "/pagos/{id}": {
+      "get": {
+        "summary": "Obtener un pago por ID",
+        "description": "Obtiene la información detallada de un pago específico con relaciones",
+        "tags": [
+          "Pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del pago"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pago encontrado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "404": {
+            "description": "Pago no encontrado"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un pago existente",
+        "description": "Actualiza un pago usando funciones PostgreSQL. No se puede editar si ya está verificado.",
+        "tags": [
+          "Pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del pago"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "monto": {
+                    "type": "number",
+                    "example": 600,
+                    "description": "Nuevo monto (NO se puede cambiar si es pago con tarjeta)"
+                  },
+                  "descripcion": {
+                    "type": "string",
+                    "example": "Descripción actualizada",
+                    "nullable": true
+                  },
+                  "fecha_esperada_debito": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-03-01",
+                    "nullable": true
+                  },
+                  "pagado": {
+                    "type": "boolean",
+                    "example": true,
+                    "description": "Marcar como pagado"
+                  },
+                  "verificado": {
+                    "type": "boolean",
+                    "example": true,
+                    "description": "Marcar como verificado (auto-marca pagado = true)"
+                  },
+                  "gmail_enviado": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "activo": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pago actualizado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Pago no encontrado"
+          },
+          "409": {
+            "description": "No se puede editar (ya verificado o intento de cambiar monto con tarjeta)"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Cancelar un pago",
+        "description": "Cambia el estado del pago a CANCELADO (no se elimina físicamente)",
+        "tags": [
+          "Pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del pago"
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pago cancelado exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Pago no encontrado"
+          },
+          "409": {
+            "description": "No se puede cancelar un pago ya completado"
+          }
+        }
+      }
+    },
+    "/pagos/{id}/desactivar": {
+      "patch": {
+        "summary": "Desactivar un pago",
+        "description": "Cambia el estado activo del pago a false (soft delete). El pago no se elimina, solo se desactiva.",
+        "tags": [
+          "Pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del pago a desactivar"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "usuario_id": {
+                    "type": "integer",
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pago desactivado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Pago desactivado exitosamente"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "estados": {
+                          "type": "object",
+                          "properties": {
+                            "activo": {
+                              "type": "boolean",
+                              "example": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Pago no encontrado"
+          },
+          "409": {
+            "description": "No se puede desactivar (ya verificado)"
+          }
+        }
+      }
+    },
+    "/pagos/{id}/activar": {
+      "patch": {
+        "summary": "Activar un pago",
+        "description": "Cambia el estado activo del pago a true. Reactiva un pago previamente desactivado.",
+        "tags": [
+          "Pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del pago a activar"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "usuario_id": {
+                    "type": "integer",
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pago activado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Pago activado exitosamente"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "estados": {
+                          "type": "object",
+                          "properties": {
+                            "activo": {
+                              "type": "boolean",
+                              "example": true
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Pago no encontrado"
+          },
+          "409": {
+            "description": "No se puede activar (ya verificado)"
+          }
+        }
+      }
+    },
+    "/pagos/{id}/con-pdf": {
+      "put": {
+        "summary": "Actualizar estado/verificado de un pago con PDF adjunto",
+        "description": "Solo para ADMIN. Permite editar estado y verificado de un pago adjuntando un PDF.\nEl PDF se envía a N8N para procesamiento/almacenamiento.\nLa actualización en BD solo ocurre si N8N responde exitosamente.\n",
+        "tags": [
+          "Pagos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "archivo"
+                ],
+                "properties": {
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "PENDIENTE",
+                      "PAGADO",
+                      "CANCELADO"
+                    ]
+                  },
+                  "verificado": {
+                    "type": "boolean"
+                  },
+                  "archivo": {
+                    "type": "object",
+                    "required": [
+                      "nombre",
+                      "tipo",
+                      "base64"
+                    ],
+                    "properties": {
+                      "nombre": {
+                        "type": "string",
+                        "example": "comprobante_123.pdf"
+                      },
+                      "tipo": {
+                        "type": "string",
+                        "example": "application/pdf"
+                      },
+                      "base64": {
+                        "type": "string",
+                        "description": "Contenido del PDF en base64"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pago actualizado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos o error del servicio"
+          },
+          "404": {
+            "description": "Pago no encontrado"
+          },
+          "503": {
+            "description": "Servicio de procesamiento no disponible"
+          }
+        }
+      }
+    },
+    "/proveedores": {
+      "get": {
+        "summary": "Listar todos los proveedores",
+        "description": "Obtiene una lista de todos los proveedores con sus correos asociados",
+        "tags": [
+          "Proveedores"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de proveedores obtenida exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un nuevo proveedor",
+        "description": "Crea un nuevo proveedor con hasta 4 correos electrónicos",
+        "tags": [
+          "Proveedores"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre",
+                  "lenguaje"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Air Canada"
+                  },
+                  "lenguaje": {
+                    "type": "string",
+                    "enum": [
+                      "Español",
+                      "English",
+                      "Français"
+                    ],
+                    "example": "English"
+                  },
+                  "correo1": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "billing@aircanada.com"
+                  },
+                  "correo2": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "correo3": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "correo4": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Proveedor creado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          }
+        }
+      }
+    },
+    "/proveedores/{id}": {
+      "get": {
+        "summary": "Obtener un proveedor por ID",
+        "description": "Obtiene la información detallada de un proveedor específico incluyendo sus correos",
+        "tags": [
+          "Proveedores"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del proveedor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proveedor encontrado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "404": {
+            "description": "Proveedor no encontrado"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un proveedor existente",
+        "description": "Actualiza información de un proveedor",
+        "tags": [
+          "Proveedores"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del proveedor"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "lenguaje": {
+                    "type": "string",
+                    "enum": [
+                      "Español",
+                      "English",
+                      "Français"
+                    ]
+                  },
+                  "correo1": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "correo2": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "correo3": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "correo4": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proveedor actualizado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Proveedor no encontrado"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un proveedor",
+        "description": "Elimina un proveedor del sistema",
+        "tags": [
+          "Proveedores"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del proveedor"
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proveedor eliminado exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (solo ADMIN)"
+          },
+          "404": {
+            "description": "Proveedor no encontrado"
+          }
+        }
+      }
+    },
+    "/proveedores/{id}/correos": {
+      "post": {
+        "summary": "Agregar correo electrónico a un proveedor",
+        "description": "Agrega un nuevo correo electrónico a un proveedor existente (máximo 4 correos)",
+        "tags": [
+          "Proveedores"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del proveedor"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "correo",
+                  "principal"
+                ],
+                "properties": {
+                  "correo": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "payments@provider.com"
+                  },
+                  "principal": {
+                    "type": "boolean",
+                    "description": "Indica si este es el correo principal",
+                    "example": true
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Correo agregado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos o máximo de correos alcanzado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Proveedor no encontrado"
+          }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "summary": "Listar todos los roles",
+        "tags": [
+          "Roles"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de roles"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un nuevo rol",
+        "tags": [
+          "Roles"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "CONTADOR"
+                  },
+                  "descripcion": {
+                    "type": "string",
+                    "example": "Rol para personal de contabilidad"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Rol creado"
+          },
+          "409": {
+            "description": "Rol ya existe"
+          }
+        }
+      }
+    },
+    "/roles/{id}": {
+      "get": {
+        "summary": "Obtener un rol por ID",
+        "tags": [
+          "Roles"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del rol"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rol encontrado"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un rol",
+        "tags": [
+          "Roles"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rol actualizado"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un rol",
+        "tags": [
+          "Roles"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rol eliminado"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "409": {
+            "description": "Rol tiene usuarios asociados"
+          }
+        }
+      }
+    },
+    "/servicios": {
+      "get": {
+        "summary": "Listar todos los servicios",
+        "description": "Obtiene una lista de todos los servicios disponibles",
+        "tags": [
+          "Servicios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de servicios obtenida exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un nuevo servicio",
+        "description": "Crea un nuevo servicio en el sistema",
+        "tags": [
+          "Servicios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Hospedaje"
+                  },
+                  "descripcion": {
+                    "type": "string",
+                    "example": "Servicio de alojamiento hotelero"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Servicio creado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          }
+        }
+      }
+    },
+    "/servicios/{id}": {
+      "get": {
+        "summary": "Obtener un servicio por ID",
+        "description": "Obtiene la información detallada de un servicio específico",
+        "tags": [
+          "Servicios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del servicio"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servicio encontrado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "404": {
+            "description": "Servicio no encontrado"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un servicio existente",
+        "description": "Actualiza la información de un servicio",
+        "tags": [
+          "Servicios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del servicio"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Servicio actualizado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Servicio no encontrado"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un servicio",
+        "description": "Elimina un servicio del sistema",
+        "tags": [
+          "Servicios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del servicio"
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servicio eliminado exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (solo ADMIN)"
+          },
+          "404": {
+            "description": "Servicio no encontrado"
+          }
+        }
+      }
+    },
+    "/tarjetas": {
+      "get": {
+        "summary": "Listar todas las tarjetas de crédito",
+        "description": "Obtiene una lista de todas las tarjetas de crédito registradas",
+        "tags": [
+          "Tarjetas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de tarjetas obtenida exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear una nueva tarjeta de crédito",
+        "description": "Registra una nueva tarjeta de crédito usando funciones PostgreSQL",
+        "tags": [
+          "Tarjetas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre_titular",
+                  "ultimos_4_digitos",
+                  "moneda",
+                  "limite_mensual"
+                ],
+                "properties": {
+                  "nombre_titular": {
+                    "type": "string",
+                    "example": "Juan Pérez",
+                    "description": "Nombre completo del titular de la tarjeta"
+                  },
+                  "ultimos_4_digitos": {
+                    "type": "string",
+                    "pattern": "^\\d{4}$",
+                    "example": "1234",
+                    "description": "Últimos 4 dígitos de la tarjeta (exactamente 4 números)"
+                  },
+                  "moneda": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "CAD"
+                    ],
+                    "example": "USD",
+                    "description": "Moneda de la tarjeta"
+                  },
+                  "limite_mensual": {
+                    "type": "number",
+                    "example": 5000,
+                    "description": "Límite mensual de crédito"
+                  },
+                  "tipo_tarjeta": {
+                    "type": "string",
+                    "example": "Visa",
+                    "description": "Tipo de tarjeta (Visa, Mastercard, etc.)"
+                  },
+                  "activo": {
+                    "type": "boolean",
+                    "example": true,
+                    "description": "Estado activo de la tarjeta"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tarjeta creada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Tarjeta creada"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "nombre_titular": {
+                          "type": "string",
+                          "example": "Juan Pérez"
+                        },
+                        "ultimos_4_digitos": {
+                          "type": "string",
+                          "example": "1234"
+                        },
+                        "moneda": {
+                          "type": "string",
+                          "example": "USD"
+                        },
+                        "limite_mensual": {
+                          "type": "number",
+                          "example": 5000
+                        },
+                        "saldo_disponible": {
+                          "type": "number",
+                          "example": 5000
+                        },
+                        "tipo_tarjeta": {
+                          "type": "string",
+                          "example": "Visa"
+                        },
+                        "activo": {
+                          "type": "boolean",
+                          "example": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          }
+        }
+      }
+    },
+    "/tarjetas/{id}": {
+      "get": {
+        "summary": "Obtener una tarjeta por ID",
+        "description": "Obtiene la información detallada de una tarjeta específica",
+        "tags": [
+          "Tarjetas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la tarjeta"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tarjeta encontrada"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Tarjeta no encontrada"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar una tarjeta existente",
+        "description": "Actualiza la información de una tarjeta de crédito usando funciones PostgreSQL",
+        "tags": [
+          "Tarjetas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la tarjeta"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre_titular": {
+                    "type": "string",
+                    "example": "Juan Carlos Pérez",
+                    "description": "Nombre completo del titular"
+                  },
+                  "limite_mensual": {
+                    "type": "number",
+                    "example": 6000,
+                    "description": "Nuevo límite mensual (ajusta saldo proporcionalmente)"
+                  },
+                  "tipo_tarjeta": {
+                    "type": "string",
+                    "example": "Visa Platinum",
+                    "description": "Tipo de tarjeta"
+                  },
+                  "activo": {
+                    "type": "boolean",
+                    "example": true,
+                    "description": "Estado activo"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 2,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tarjeta actualizada exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (ADMIN o SUPERVISOR)"
+          },
+          "404": {
+            "description": "Tarjeta no encontrada"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar tarjeta (soft delete)",
+        "description": "Desactiva una tarjeta marcándola como inactiva",
+        "tags": [
+          "Tarjetas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID de la tarjeta"
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tarjeta eliminada (desactivada) exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (solo ADMIN)"
+          },
+          "404": {
+            "description": "Tarjeta no encontrada"
+          }
+        }
+      }
+    },
+    "/usuarios": {
+      "get": {
+        "summary": "Listar todos los usuarios",
+        "description": "Obtiene una lista de todos los usuarios del sistema",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios obtenida exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un nuevo usuario",
+        "description": "Crea un nuevo usuario en el sistema con contraseña hasheada",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre_usuario",
+                  "contrasena",
+                  "nombre_completo",
+                  "rol_id"
+                ],
+                "properties": {
+                  "nombre_usuario": {
+                    "type": "string",
+                    "example": "jdoe"
+                  },
+                  "contrasena": {
+                    "type": "string",
+                    "example": "Password123!"
+                  },
+                  "nombre_completo": {
+                    "type": "string",
+                    "example": "John Doe"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john@example.com"
+                  },
+                  "rol_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 3,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario creado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (solo ADMIN)"
+          }
+        }
+      }
+    },
+    "/usuarios/{id}": {
+      "get": {
+        "summary": "Obtener un usuario por ID",
+        "description": "Obtiene la información detallada de un usuario específico",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario encontrado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un usuario existente",
+        "description": "Actualiza la información de un usuario. Si se proporciona password, se hashea automáticamente",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario a actualizar"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre_usuario": {
+                    "type": "string"
+                  },
+                  "contrasena": {
+                    "type": "string",
+                    "description": "Nueva contraseña (se hasheará automáticamente)"
+                  },
+                  "nombre_completo": {
+                    "type": "string"
+                  },
+                  "correo": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "rol_id": {
+                    "type": "integer"
+                  },
+                  "usuario_id": {
+                    "type": "integer",
+                    "example": 3,
+                    "description": "ID del usuario auditor (opcional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Usuario actualizado exitosamente"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (solo ADMIN)"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un usuario (soft delete)",
+        "description": "Desactiva un usuario marcándolo como inactivo (no se elimina físicamente)",
+        "tags": [
+          "Usuarios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario a eliminar"
+          },
+          {
+            "in": "query",
+            "name": "usuario_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario auditor (opcional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario eliminado (desactivado) exitosamente"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos (solo ADMIN)"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        }
+      }
+    },
+    "/webhooks/n8n/documento-procesado": {
+      "post": {
+        "summary": "Recibir notificación de N8N tras procesar documento",
+        "description": "Endpoint para que N8N notifique cuando termina de procesar un documento.\n- OCR extrae códigos de reserva del PDF\n- Actualiza automáticamente los pagos encontrados (estado=PAGADO, verificado=TRUE)\n- Vincula el documento con los pagos\n- Registra códigos no encontrados para revisión manual\n",
+        "tags": [
+          "Webhooks"
+        ],
+        "security": [
+          {
+            "n8nToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-n8n-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Token de autenticación N8N (configurado en .env)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "documento_id",
+                  "tipo_procesamiento",
+                  "exito",
+                  "timestamp"
+                ],
+                "properties": {
+                  "documento_id": {
+                    "type": "integer",
+                    "example": 123,
+                    "description": "ID del documento procesado"
+                  },
+                  "tipo_procesamiento": {
+                    "type": "string",
+                    "enum": [
+                      "FACTURA",
+                      "DOCUMENTO_BANCO"
+                    ],
+                    "example": "FACTURA"
+                  },
+                  "exito": {
+                    "type": "boolean",
+                    "example": true,
+                    "description": "Si el procesamiento OCR fue exitoso"
+                  },
+                  "mensaje": {
+                    "type": "string",
+                    "example": "OCR completado exitosamente",
+                    "description": "Mensaje informativo del procesamiento"
+                  },
+                  "codigos_encontrados": {
+                    "type": "array",
+                    "description": "Lista de códigos de reserva extraídos del documento",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "codigo_reserva": {
+                          "type": "string",
+                          "example": "AC12345"
+                        },
+                        "encontrado": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "pago_id": {
+                          "type": "integer",
+                          "example": 501,
+                          "description": "ID del pago encontrado (opcional)"
+                        },
+                        "observaciones": {
+                          "type": "string",
+                          "example": "Código encontrado en línea 5"
+                        }
+                      }
+                    }
+                  },
+                  "codigos_no_encontrados": {
+                    "type": "array",
+                    "description": "Códigos extraídos que no coinciden con ningún pago",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "XYZ999",
+                      "ABC000"
+                    ]
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-01-30T04:30:15.234Z",
+                    "description": "Fecha/hora del procesamiento"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook procesado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Webhook procesado exitosamente"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "pagos_actualizados": {
+                          "type": "integer",
+                          "example": 3,
+                          "description": "Cantidad de pagos actualizados"
+                        },
+                        "pagos_encontrados": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          },
+                          "example": [
+                            501,
+                            502,
+                            503
+                          ],
+                          "description": "IDs de los pagos actualizados"
+                        },
+                        "codigos_no_encontrados": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": [
+                            "XYZ999"
+                          ],
+                          "description": "Códigos que no se encontraron en la BD"
+                        },
+                        "errores": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": []
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos en el webhook"
+          },
+          "401": {
+            "description": "Token N8N no proporcionado"
+          },
+          "403": {
+            "description": "Token N8N inválido"
+          },
+          "500": {
+            "description": "Error al procesar webhook"
+          }
+        }
+      }
+    }
+  }
+}
