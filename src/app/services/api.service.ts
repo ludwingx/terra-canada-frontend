@@ -28,10 +28,10 @@ export class ApiService {
     return `${this.baseUrl}/${cleanEndpoint}`;
   }
 
-  private getHeaders(): HttpHeaders {
+  private getHeaders(options?: { noAuth?: boolean }): HttpHeaders {
     let token: string | null = null;
-    if (isPlatformBrowser(this.platformId)) {
-       token = localStorage.getItem('token');
+    if (!options?.noAuth && isPlatformBrowser(this.platformId)) {
+      token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
     }
     
     let headers = new HttpHeaders({
@@ -45,7 +45,7 @@ export class ApiService {
     return headers;
   }
 
-  get<T>(endpoint: string, params?: any): Observable<T> {
+  get<T>(endpoint: string, params?: any, options?: { noAuth?: boolean }): Observable<T> {
     let httpParams = new HttpParams();
     if (params) {
       Object.keys(params).forEach(key => {
@@ -55,26 +55,26 @@ export class ApiService {
       });
     }
     return this.http.get<T>(this.buildUrl(endpoint), { 
-      headers: this.getHeaders(),
+      headers: this.getHeaders(options),
       params: httpParams
     });
   }
 
-  post<T>(endpoint: string, body: any): Observable<T> {
+  post<T>(endpoint: string, body: any, options?: { noAuth?: boolean }): Observable<T> {
     return this.http.post<T>(this.buildUrl(endpoint), body, { 
-      headers: this.getHeaders() 
+      headers: this.getHeaders(options) 
     });
   }
 
-  put<T>(endpoint: string, body: any): Observable<T> {
+  put<T>(endpoint: string, body: any, options?: { noAuth?: boolean }): Observable<T> {
     return this.http.put<T>(this.buildUrl(endpoint), body, { 
-      headers: this.getHeaders() 
+      headers: this.getHeaders(options) 
     });
   }
 
-  delete<T>(endpoint: string): Observable<T> {
+  delete<T>(endpoint: string, options?: { noAuth?: boolean }): Observable<T> {
     return this.http.delete<T>(this.buildUrl(endpoint), { 
-      headers: this.getHeaders() 
+      headers: this.getHeaders(options) 
     });
   }
 }

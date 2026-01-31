@@ -13,8 +13,8 @@ export class AuthService {
   
   currentUser = signal<Usuario | null>(null);
 
-  login(credentials: { nombre_usuario: string; password: string }): Observable<{ token: string; usuario: Usuario }> {
-    return this.api.post<{ estado: boolean; data: { token: string; usuario: Usuario } }>(`auth/login`, credentials).pipe(
+  login(credentials: { username: string; password: string }): Observable<{ token: string; usuario: Usuario }> {
+    return this.api.post<{ estado: boolean; data: { token: string; usuario: Usuario } }>(`auth/login`, credentials, { noAuth: true }).pipe(
       tap(res => {
         if (res.estado && isPlatformBrowser(this.platformId)) {
           localStorage.setItem('jwt_token', res.data.token);

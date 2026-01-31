@@ -31,7 +31,7 @@ export class LoginComponent {
 
     const credentials = this.form.getRawValue();
     this.auth.login({
-      nombre_usuario: String(credentials.nombre_usuario || ''),
+      username: String(credentials.nombre_usuario || ''),
       password: String(credentials.password || '')
     }).subscribe({
       next: () => {
