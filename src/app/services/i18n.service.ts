@@ -34,6 +34,7 @@ export class I18nService {
     'nav.audit': { fr: 'Audit', es: 'Auditoría' },
     'nav.settings': { fr: 'Paramètres', es: 'Configuración' },
     'nav.logout': { fr: 'Déconnexion', es: 'Cerrar sesión' },
+    'nav.finance': { fr: 'Financier', es: 'Financieros' },
 
     // Dashboard
     'dashboard.title': { fr: 'Tableau de bord', es: 'Panel de control' },
@@ -248,6 +249,9 @@ export class I18nService {
     'filter.all_methods': { fr: 'Tous les moyens', es: 'Todos los medios' },
     'filter.cards': { fr: 'Cartes', es: 'Tarjetas' },
     'filter.accounts': { fr: 'Comptes', es: 'Cuentas' },
+    'filter.todos': { fr: 'Tous', es: 'Todos' },
+    'filter.pendientes': { fr: 'En attente', es: 'Pendientes' },
+    'filter.pagados': { fr: 'Payés', es: 'Pagados' },
 
     // Roles
     'role.admin': { fr: 'Administrateur', es: 'Administrador' },
@@ -264,6 +268,35 @@ export class I18nService {
     'msg.no_data': { fr: 'Aucune donnée disponible', es: 'No hay datos disponibles' },
     'msg.loading': { fr: 'Chargement...', es: 'Cargando...' },
     'msg.confirm_delete_payment': { fr: 'Êtes-vous sûr de vouloir supprimer ce paiement ?', es: '¿Está seguro de que desea eliminar este pago?' },
+    'msg.no': { fr: 'Non', es: 'No' },
+    'msg.yes': { fr: 'Oui', es: 'Sí' },
+
+    // Financieros Tarjetas
+    'financierosTarjetas': { fr: 'Financier - Cartes', es: 'Financieros - Tarjetas' },
+    'financierosTarjetasDesc': { fr: 'Gestion des paiements par carte de crédit', es: 'Gestión de registros de pagos con tarjeta' },
+    'subirDocumentos': { fr: 'Télécharger documents', es: 'Subir documentos' },
+    'nuevoPago': { fr: 'Nouveau paiement', es: 'Nuevo pago' },
+    'editarPago': { fr: 'Modifier paiement', es: 'Editar pago' },
+    'registrosPagos': { fr: 'Registres de paiements', es: 'Registros de pagos' },
+    'buscarRegistros': { fr: 'Rechercher des registres...', es: 'Buscar registros...' },
+    'fecha': { fr: 'Date', es: 'Fecha' },
+    'cliente': { fr: 'Client', es: 'Cliente' },
+    'proveedor': { fr: 'Fournisseur', es: 'Proveedor' },
+    'monto': { fr: 'Montant', es: 'Monto' },
+    'numeroPresta': { fr: 'N° Réservation', es: 'N° Reserva' },
+    'tarjeta': { fr: 'Carte', es: 'Tarjeta' },
+    'estado': { fr: 'Statut', es: 'Estado' },
+    'verificacion': { fr: 'Vérification', es: 'Verificación' },
+    'registradoPor': { fr: 'Enregistré par', es: 'Registrado por' },
+    'actions.actions': { fr: 'Actions', es: 'Acciones' },
+    'ver': { fr: 'Voir', es: 'Ver' },
+    'editar': { fr: 'Modifier', es: 'Editar' },
+    'eliminar': { fr: 'Supprimer', es: 'Eliminar' },
+    'si': { fr: 'Oui', es: 'Sí' },
+    'no': { fr: 'Non', es: 'No' },
+    'todos': { fr: 'Tous', es: 'Todos' },
+    'pendientes': { fr: 'En attente', es: 'Pendientes' },
+    'pagados': { fr: 'Payés', es: 'Pagados' },
   };
 
   constructor() {

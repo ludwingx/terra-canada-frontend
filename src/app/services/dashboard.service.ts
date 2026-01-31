@@ -21,28 +21,28 @@ export class DashboardService {
         {
           id: 'dashboard',
           label: 'Dashboard',
-          translationKey: 'dashboard',
+          translationKey: 'nav.dashboard',
           icon: 'pi pi-home',
           route: '/dashboard'
         },
         {
           id: 'pagos',
           label: 'Pagos',
-          translationKey: 'pagos',
+          translationKey: 'nav.payments',
           icon: 'pi pi-dollar',
           route: '/pagos'
         },
         {
            id: 'clientes',
            label: 'Clientes',
-           translationKey: 'clientes',
+           translationKey: 'nav.clients',
            icon: 'pi pi-users',
            route: '/clientes'
         },
         {
            id: 'proveedores',
            label: 'Proveedores',
-           translationKey: 'proveedores',
+           translationKey: 'nav.suppliers',
            icon: 'pi pi-truck',
            route: '/proveedores'
         },
@@ -56,35 +56,35 @@ export class DashboardService {
         {
            id: 'cuentas',
            label: 'Cuentas',
-           translationKey: 'cuentas',
+           translationKey: 'nav.accounts',
            icon: 'pi pi-building',
            route: '/cuentas'
         },
         {
           id: 'documentos',
           label: 'Documentos',
-          translationKey: 'documentos',
+          translationKey: 'nav.documents',
           icon: 'pi pi-file',
           route: '/documentos'
         },
         {
           id: 'correos',
           label: 'Correos',
-          translationKey: 'correos',
+          translationKey: 'nav.emails',
           icon: 'pi pi-envelope',
           route: '/correos'
         },
         {
           id: 'auditoria',
           label: 'Auditoría',
-          translationKey: 'auditoria',
+          translationKey: 'nav.audit',
           icon: 'pi pi-history',
           route: '/auditoria'
         },
         {
           id: 'usuarios',
           label: 'Usuarios',
-          translationKey: 'usuarios',
+          translationKey: 'nav.users',
           icon: 'pi pi-user-edit',
           route: '/usuarios'
         }

@@ -49,7 +49,12 @@ export class TarjetasService {
     const params = clienteId ? { cliente_id: clienteId } : {};
     return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`tarjetas`, params).pipe(
       map(res => {
-        const rawData = res.data?.data?.data || res.data?.data || res.data || [];
+        // Robust extraction from data.data.data or data.data or data
+        let rawData = res.data?.data?.data || res.data?.data || res.data || [];
+        // If it's still an object with a data property (happens in some API versions)
+        if (!Array.isArray(rawData) && rawData && typeof rawData === 'object' && 'data' in rawData) {
+          rawData = (rawData as any).data;
+        }
         return (Array.isArray(rawData) ? rawData : []).map(t => this.mapTarjeta(t));
       })
     );

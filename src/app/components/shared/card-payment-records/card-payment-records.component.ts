@@ -50,19 +50,24 @@ export class CardPaymentRecordsComponent implements OnInit, OnDestroy {
   // Configuración de tabla genérica
   columns: TableColumn[] = [
     {
-      key: 'createdAt',
+      key: 'fechaCreacion',
       label: 'fecha',
       translationKey: 'fecha',
       type: 'date',
       width: '100px'
     },
     {
-      key: 'cliente.nombre',
+      key: 'clientes',
       label: 'cliente',
       translationKey: 'cliente',
       type: 'text',
       width: '150px',
-      formatter: (value: any, row: any) => (row.cliente as any)?.nombre || 'N/A'
+      formatter: (value: any, row: any) => {
+        if (Array.isArray(row.clientes) && row.clientes.length > 0) {
+          return row.clientes.map((c: any) => c.cliente?.nombre || 'N/A').join(', ');
+        }
+        return 'N/A';
+      }
     },
     {
       key: 'proveedor.nombre',
@@ -77,37 +82,39 @@ export class CardPaymentRecordsComponent implements OnInit, OnDestroy {
       label: 'monto',
       translationKey: 'monto',
       type: 'currency',
-      width: '100px'
+      width: '100px',
+      formatter: (value: any, row: any) => `${row.moneda} ${value}`
     },
     {
-      key: 'numero_presta',
+      key: 'codigoReserva',
       label: 'numeroPresta',
       translationKey: 'numeroPresta',
       type: 'text',
       width: '120px'
     },
     {
-      key: 'tarjeta.numero_tarjeta',
+      key: 'tarjeta.ultimos4Digitos',
       label: 'tarjeta',
       translationKey: 'tarjeta',
       type: 'text',
       width: '130px',
       formatter: (value: any, row: any) => {
-        const num = (row.tarjeta as any)?.numero_tarjeta;
-        return num ? `****${num.slice(-4)}` : 'N/A';
+        const num = row.tarjeta?.ultimos4Digitos || (row.cuentaBancaria?.ultimos4Digitos);
+        const name = row.tarjeta ? 'Tarj.' : (row.cuentaBancaria ? 'Cta.' : '');
+        return num ? `${name} ****${num}` : 'N/A';
       }
     },
     {
-      key: 'estado.nombre',
+      key: 'pagado',
       label: 'estado',
       translationKey: 'estado',
       type: 'badge',
       width: '100px',
-      formatter: (value: any, row: any) => (row.estado as any)?.nombre || 'N/A',
-      badgeClass: (value: any) => this.getStatusClass(value)
+      formatter: (value: any, row: any) => value ? 'PAGADO' : 'PENDIENTE',
+      badgeClass: (value: any) => value ? 'status-aprobado' : 'status-pendiente'
     },
     {
-      key: 'esta_verificado',
+      key: 'verificado',
       label: 'verificacion',
       translationKey: 'verificacion',
       type: 'badge',
@@ -116,12 +123,12 @@ export class CardPaymentRecordsComponent implements OnInit, OnDestroy {
       badgeClass: (value: any) => this.getVerificationClass(value)
     },
     {
-      key: 'registrado_por.username',
+      key: 'usuario.nombreCompleto',
       label: 'registradoPor',
       translationKey: 'registradoPor',
       type: 'text',
       width: '150px',
-      formatter: (value: any, row: any) => (row.usuario as any)?.username || 'N/A'
+      formatter: (value: any, row: any) => row.usuario?.nombreCompleto || 'N/A'
     }
   ];
 
@@ -251,30 +258,33 @@ export class CardPaymentRecordsComponent implements OnInit, OnDestroy {
     let data = [...this.pagos];
 
     if (this.dateFilter) {
-      data = data.filter(r => ((r as any).createdAt || '').startsWith(this.dateFilter));
+      data = data.filter(r => r.fechaCreacion && r.fechaCreacion.toISOString().startsWith(this.dateFilter));
     }
 
     if (this.statusFilter !== 'todos') {
-      data = data.filter(r => (r as any).estado?.nombre === this.statusFilter);
+      data = data.filter(r => this.statusFilter === 'PAGADO' ? r.pagado : !r.pagado);
     }
 
     // Filtro por búsqueda libre
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
       data = data.filter((r: any) =>
-        ((r.createdAt || '') as string).toLowerCase().includes(term) ||
-        ((r.cliente?.nombre || '') as string).toLowerCase().includes(term) ||
-        ((r.proveedor?.nombre || '') as string).toLowerCase().includes(term) ||
-        ((r.numero_presta || '') as string).toLowerCase().includes(term) ||
-        ((r.usuario?.username || '') as string).toLowerCase().includes(term)
+        (r.fechaCreacion?.toISOString().toLowerCase().includes(term)) ||
+        (row => {
+           const clientNames = (r.clientes || []).map((c: any) => c.cliente?.nombre || '').join(' ').toLowerCase();
+           return clientNames.includes(term);
+        })(r) ||
+        (r.proveedor?.nombre?.toLowerCase().includes(term)) ||
+        (r.codigoReserva?.toLowerCase().includes(term)) ||
+        (r.usuario?.nombreCompleto?.toLowerCase().includes(term))
       );
     }
 
     // Filtro por pestaña (todos, pendientes, pagados)
     if (this.filterTab === 'pendientes') {
-      data = data.filter(r => (r as any).estado?.nombre === 'A PAGAR');
+      data = data.filter(r => !r.pagado);
     } else if (this.filterTab === 'pagados') {
-      data = data.filter(r => (r as any).estado?.nombre === 'PAGADO');
+      data = data.filter(r => r.pagado);
     }
 
     this.filteredPagos = data;
