@@ -32,8 +32,11 @@ export class ClientesService {
   }
 
   getClientes(): Observable<Cliente[]> {
-    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`clientes`).pipe(
-      map(res => (res.data || []).map(c => this.mapCliente(c)))
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`clientes`).pipe(
+      map(res => {
+        const rawData = res.data?.data || res.data || [];
+        return (Array.isArray(rawData) ? rawData : []).map(c => this.mapCliente(c));
+      })
     );
   }
 
@@ -47,8 +50,8 @@ export class ClientesService {
       usuario_id: this.getUsuarioIdForAudit(cliente)
     };
 
-    return this.api.post<{success: boolean, data: Cliente}>(`clientes`, payload).pipe(
-      map(res => res.data)
+    return this.api.post<{success: boolean, data: any}>(`clientes`, payload).pipe(
+      map(res => this.mapCliente(res.data?.data || res.data))
     );
   }
 }

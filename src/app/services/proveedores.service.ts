@@ -72,15 +72,18 @@ export class ProveedoresService {
 
   getProveedores(servicioId?: number): Observable<Proveedor[]> {
     const params = servicioId ? { servicio_id: servicioId } : {};
-    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`proveedores`, params).pipe(
-      map(res => (res.data || []).map(p => this.mapProveedor(p)))
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`proveedores`, params).pipe(
+      map(res => {
+        const rawData = res.data?.data || res.data || [];
+        return (Array.isArray(rawData) ? rawData : []).map(p => this.mapProveedor(p));
+      })
     );
   }
 
   createProveedor(proveedor: any): Observable<Proveedor> {
     const payload = this.toCreateProveedorPayload(proveedor);
-    return this.api.post<{success: boolean, data: Proveedor}>(`proveedores`, payload).pipe(
-      map(res => res.data)
+    return this.api.post<{success: boolean, data: any}>(`proveedores`, payload).pipe(
+      map(res => this.mapProveedor(res.data?.data || res.data))
     );
   }
 

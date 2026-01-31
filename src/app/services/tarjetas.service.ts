@@ -47,21 +47,24 @@ export class TarjetasService {
 
   getTarjetas(clienteId?: number): Observable<TarjetaCredito[]> {
     const params = clienteId ? { cliente_id: clienteId } : {};
-    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`tarjetas`, params).pipe(
-      map(res => (res.data || []).map(t => this.mapTarjeta(t)))
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`tarjetas`, params).pipe(
+      map(res => {
+        const rawData = res.data?.data || res.data || [];
+        return (Array.isArray(rawData) ? rawData : []).map(t => this.mapTarjeta(t));
+      })
     );
   }
 
   createTarjeta(tarjeta: any): Observable<TarjetaCredito> {
     const payload = this.toCreateTarjetaPayload(tarjeta);
-    return this.api.post<{success: boolean, data: TarjetaCredito}>(`tarjetas`, payload).pipe(
-      map(res => res.data)
+    return this.api.post<{success: boolean, data: any}>(`tarjetas`, payload).pipe(
+      map(res => this.mapTarjeta(res.data?.data || res.data))
     );
   }
 
   recargarTarjeta(id: number, monto: number): Observable<TarjetaCredito> {
-    return this.api.post<{success: boolean, data: TarjetaCredito}>(`tarjetas/${id}/recargar`, { monto }).pipe(
-      map(res => res.data)
+    return this.api.post<{success: boolean, data: any}>(`tarjetas/${id}/recargar`, { monto }).pipe(
+      map(res => this.mapTarjeta(res.data?.data || res.data))
     );
   }
 }

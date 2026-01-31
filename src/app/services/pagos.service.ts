@@ -107,7 +107,14 @@ export class PagosService {
     const proveedor = p?.proveedor ? this.mapProveedor(p.proveedor) : undefined;
     const usuario = p?.usuario ? this.mapUsuario(p.usuario) : undefined;
     const estados = p?.estados ?? {};
-    const medioPago = p?.medio_pago;
+    const medioPago = p?.medio_pago || p?.medioPago;
+    
+    // Support both direct properties and nested 'estados' object
+    const isPagado = Boolean(estados?.pagado ?? p?.pagado ?? false);
+    const isVerificado = Boolean(estados?.verificado ?? p?.verificado ?? false);
+    const isGmailEnviado = Boolean(estados?.gmail_enviado ?? p?.gmail_enviado ?? p?.gmailEnviado ?? false);
+    const isActive = Boolean(estados?.activo ?? p?.activo ?? true);
+
     const tipoMedioPago: TipoMedioPago = (medioPago?.tipo ?? p?.tipo_medio_pago ?? p?.tipoMedioPago) as TipoMedioPago;
 
     const clientesRaw: any[] = Array.isArray(p?.clientes) ? p.clientes : [];
@@ -116,7 +123,7 @@ export class PagosService {
       pagoId: Number(p?.id),
       clienteId: Number(c?.id),
       cliente: this.mapCliente(c),
-      fechaCreacion: p?.fecha_creacion
+      fechaCreacion: p?.fecha_creacion || p?.fechaCreacion
     } as PagoCliente));
 
     const tarjeta = tipoMedioPago === 'TARJETA' && medioPago ? this.mapTarjetaFromMedioPago(medioPago) : undefined;
@@ -128,7 +135,7 @@ export class PagosService {
       proveedor,
       usuarioId: Number(usuario?.id ?? p?.usuario_id ?? 0),
       usuario,
-      codigoReserva: String(p?.codigoReserva ?? p?.codigo_reserva ?? ''),
+      codigoReserva: String(p?.codigo_reserva ?? p?.codigoReserva ?? ''),
       monto: Number(p?.monto ?? 0),
       moneda: String(p?.moneda ?? 'CAD') as TipoMoneda,
       descripcion: p?.descripcion ?? undefined,
@@ -138,15 +145,15 @@ export class PagosService {
       tarjeta,
       cuentaBancariaId: cuentaBancaria?.id,
       cuentaBancaria,
-      pagado: Boolean(estados?.pagado ?? p?.pagado ?? false),
-      verificado: Boolean(estados?.verificado ?? p?.verificado ?? false),
-      gmailEnviado: Boolean(estados?.gmail_enviado ?? p?.gmail_enviado ?? p?.gmailEnviado ?? false),
-      activo: Boolean(estados?.activo ?? p?.activo ?? true),
+      pagado: isPagado,
+      verificado: isVerificado,
+      gmailEnviado: isGmailEnviado,
+      activo: isActive,
       fechaPago: p?.fecha_pago ? new Date(p.fecha_pago) : (p?.fechaPago ? new Date(p.fechaPago) : undefined),
       fechaVerificacion: p?.fecha_verificacion ? new Date(p.fecha_verificacion) : (p?.fechaVerificacion ? new Date(p.fechaVerificacion) : undefined),
       clientes,
-      fechaCreacion: p?.fecha_creacion ? new Date(p.fecha_creacion) : new Date(),
-      fechaActualizacion: p?.fecha_actualizacion ? new Date(p.fecha_actualizacion) : new Date()
+      fechaCreacion: p?.fecha_creacion ? new Date(p.fecha_creacion) : (p?.fechaCreacion ? new Date(p.fechaCreacion) : new Date()),
+      fechaActualizacion: p?.fecha_actualizacion ? new Date(p.fecha_actualizacion) : (p?.fechaActualizacion ? new Date(p.fechaActualizacion) : new Date())
     } as Pago;
   }
 

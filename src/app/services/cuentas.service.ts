@@ -24,14 +24,17 @@ export class CuentasService {
 
   getCuentas(clienteId?: number): Observable<CuentaBancaria[]> {
     const params = clienteId ? { cliente_id: clienteId } : {};
-    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`cuentas`, params).pipe(
-      map(res => (res.data || []).map(c => this.mapCuenta(c)))
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`cuentas`, params).pipe(
+      map(res => {
+        const rawData = res.data?.data || res.data || [];
+        return (Array.isArray(rawData) ? rawData : []).map(c => this.mapCuenta(c));
+      })
     );
   }
 
   createCuenta(cuenta: any): Observable<CuentaBancaria> {
-    return this.api.post<{success: boolean, data: CuentaBancaria}>(`cuentas`, cuenta).pipe(
-      map(res => res.data)
+    return this.api.post<{success: boolean, data: any}>(`cuentas`, cuenta).pipe(
+      map(res => this.mapCuenta(res.data?.data || res.data))
     );
   }
 }

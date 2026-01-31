@@ -153,8 +153,13 @@ export class CuentaModalComponent implements OnInit, OnChanges {
 
   private initForm(): void {
     if (this.cuenta) {
+      // Normalize bank name if it comes in Spanish but the UI uses French/English
+      let nombreBanco = this.cuenta.nombreBanco;
+      if (nombreBanco === 'Banco Nacional de Canadá') nombreBanco = 'Banque Nationale';
+      if (nombreBanco === 'Royal Bank') nombreBanco = 'RBC';
+
       this.form = {
-        nombreBanco: this.cuenta.nombreBanco,
+        nombreBanco: nombreBanco,
         nombreCuenta: this.cuenta.nombreCuenta,
         ultimos4Digitos: this.cuenta.ultimos4Digitos,
         moneda: this.cuenta.moneda,
