@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, shareReplay } from 'rxjs';
 import { ApiService } from './api.service';
 import { Usuario } from '../models/interfaces';
 
@@ -8,6 +8,7 @@ import { Usuario } from '../models/interfaces';
 })
 export class UsuariosService {
   private api = inject(ApiService);
+  private usuarios$?: Observable<Usuario[]>;
 
   private mapUsuario(u: any): Usuario {
     return {
@@ -27,9 +28,16 @@ export class UsuariosService {
   }
 
   getUsuarios(): Observable<Usuario[]> {
-    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`usuarios`).pipe(
-      map(res => (res.data || []).map(u => this.mapUsuario(u)))
+    if (this.usuarios$) {
+      return this.usuarios$;
+    }
+
+    this.usuarios$ = this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`usuarios`).pipe(
+      map(res => (res.data || []).map(u => this.mapUsuario(u))),
+      shareReplay(1)
     );
+
+    return this.usuarios$;
   }
 
   getUsuario(id: number): Observable<Usuario> {

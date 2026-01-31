@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
-import { Observable, map, tap } from 'rxjs';
+import { Observable, map, of, tap, shareReplay } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { ApiService } from './api.service';
 import { Usuario } from '../models/interfaces';
@@ -12,6 +12,7 @@ export class AuthService {
   private platformId = inject(PLATFORM_ID);
   
   currentUser = signal<Usuario | null>(null);
+  private me$?: Observable<Usuario>;
 
   login(credentials: { username: string; password: string }): Observable<{ token: string; usuario: Usuario }> {
     return this.api.post<{ estado: boolean; data: { token: string; usuario: Usuario } }>(`auth/login`, credentials, { noAuth: true }).pipe(
@@ -20,6 +21,7 @@ export class AuthService {
           localStorage.setItem('jwt_token', res.data.token);
           localStorage.setItem('token', res.data.token);
           this.currentUser.set(res.data.usuario);
+          this.me$ = of(res.data.usuario);
         }
       }),
       map(res => res.data)
@@ -45,10 +47,17 @@ export class AuthService {
   }
 
   getMe(): Observable<Usuario> {
-    return this.api.get<{success?: boolean, estado?: boolean, data: Usuario}>(`auth/me`).pipe(
+    if (this.me$) {
+      return this.me$;
+    }
+
+    this.me$ = this.api.get<{ success?: boolean; estado?: boolean; data: Usuario }>(`auth/me`).pipe(
       tap(res => this.currentUser.set(res.data)),
-      map(res => res.data)
+      map(res => res.data),
+      shareReplay(1)
     );
+
+    return this.me$;
   }
 
   logout(): void {
@@ -57,6 +66,7 @@ export class AuthService {
       localStorage.removeItem('token');
     }
     this.currentUser.set(null);
+    this.me$ = undefined;
   }
 
   isAuthenticated(): boolean {
