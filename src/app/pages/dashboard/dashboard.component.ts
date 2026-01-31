@@ -121,7 +121,7 @@ export class DashboardComponent implements OnInit {
       time: new Date(p.fechaCreacion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       user: p.proveedor?.nombre || 'Proveedor',
       client: p.clientes?.[0]?.cliente?.nombre,
-      action: 'Pago registrado',
+      action: this.i18n.t('payments.pago') + ' ' + (p.pagado ? this.i18n.t('status.paid').toLowerCase() : this.i18n.t('status.pending').toLowerCase()),
       amount: p.monto,
       currency: p.moneda,
       paymentStatus: p.pagado ? 'PAGADO' : 'POR_PAGAR',
@@ -181,8 +181,8 @@ export class DashboardComponent implements OnInit {
       return Math.round((value / total) * 100);
     };
 
-    const labelCard = this.i18n.language() === 'fr' ? 'Cartes' : 'Tarjetas';
-    const labelAccount = this.i18n.language() === 'fr' ? 'Comptes' : 'Cuentas';
+    const labelCard = this.i18n.t('nav.cards');
+    const labelAccount = this.i18n.t('nav.accounts');
 
     this.paymentMethods = [
       { id: 'TARJETA', label: labelCard, total: kpis.montoTarjetas || 0, percent: percent(kpis.montoTarjetas || 0) },

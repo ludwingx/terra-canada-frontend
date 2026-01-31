@@ -13,7 +13,7 @@ import { CuentasService } from '../../../services/cuentas.service';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? (i18n.language() === 'fr' ? 'Modifier le compte' : 'Editar cuenta') : (i18n.language() === 'fr' ? 'Nouveau compte' : 'Nueva cuenta')"
+      [title]="isEdit ? i18n.t('actions.edit_account') : i18n.t('actions.new_account')"
       [loading]="loading"
       [canSave]="isFormValid()"
       size="md"
@@ -25,7 +25,7 @@ import { CuentasService } from '../../../services/cuentas.service';
         <div class="form-group">
           <label class="form-label required">{{ i18n.t('accounts.bank') }}</label>
           <select class="form-control" [(ngModel)]="form.nombreBanco" name="nombreBanco">
-            <option value="">{{ i18n.language() === 'fr' ? 'Sélectionner une banque' : 'Seleccionar un banco' }}</option>
+            <option value="">{{ i18n.t('accounts.select_bank') }}</option>
             <option value="Banque Nationale">Banque Nationale</option>
             <option value="TD Bank">TD Bank</option>
             <option value="Desjardins">Desjardins</option>
@@ -44,7 +44,7 @@ import { CuentasService } from '../../../services/cuentas.service';
             class="form-control" 
             [(ngModel)]="form.nombreCuenta" 
             name="nombreCuenta"
-            [placeholder]="i18n.language() === 'fr' ? 'Ex: Compte Opérations' : 'Ej: Cuenta Operaciones'"
+            [placeholder]="i18n.t('accounts.name_placeholder')"
           >
         </div>
 

@@ -19,7 +19,7 @@ interface CorreoForm {
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? (i18n.language() === 'fr' ? 'Modifier le fournisseur' : 'Editar proveedor') : (i18n.language() === 'fr' ? 'Nouveau fournisseur' : 'Nuevo proveedor')"
+      [title]="isEdit ? i18n.t('actions.edit_supplier') : i18n.t('actions.new_supplier')"
       [loading]="loading"
       [canSave]="isFormValid()"
       size="lg"
@@ -35,7 +35,7 @@ interface CorreoForm {
             class="form-control" 
             [(ngModel)]="form.nombre" 
             name="nombre"
-            [placeholder]="i18n.language() === 'fr' ? 'Nom du fournisseur' : 'Nombre del proveedor'"
+            [placeholder]="i18n.t('actions.supplier_name_placeholder')"
           >
         </div>
 
@@ -43,7 +43,7 @@ interface CorreoForm {
         <div class="form-group">
           <label class="form-label required">{{ i18n.t('suppliers.service') }}</label>
           <select class="form-control" [(ngModel)]="form.servicioId" name="servicioId">
-            <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner un service' : 'Seleccionar un servicio' }}</option>
+            <option [ngValue]="null">{{ i18n.t('actions.select_service') }}</option>
             @for (servicio of servicios; track servicio.id) {
               <option [ngValue]="servicio.id">{{ servicio.nombre }}</option>
             }
@@ -54,7 +54,7 @@ interface CorreoForm {
         <div class="form-group">
           <label class="form-label">{{ i18n.t('suppliers.language') }}</label>
           <select class="form-control" [(ngModel)]="form.lenguaje" name="lenguaje">
-            <option value="">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
+            <option value="">{{ i18n.t('actions.select') }}</option>
             <option value="Français">Français</option>
             <option value="English">English</option>
             <option value="Español">Español</option>
@@ -76,7 +76,7 @@ interface CorreoForm {
 
         <!-- Descripción -->
         <div class="form-group full-width">
-          <label class="form-label">{{ i18n.language() === 'fr' ? 'Description' : 'Descripción' }}</label>
+          <label class="form-label">{{ i18n.t('audit.description') }}</label>
           <textarea 
             class="form-control" 
             [(ngModel)]="form.descripcion" 
@@ -106,7 +106,7 @@ interface CorreoForm {
                     [checked]="correo.principal"
                     (change)="setPrincipal(i)"
                   >
-                  {{ i18n.language() === 'fr' ? 'Principal' : 'Principal' }}
+                  {{ i18n.t('actions.principal') }}
                 </label>
                 <button type="button" class="btn btn-icon btn-danger-text" (click)="removeCorreo(i)">🗑️</button>
               </div>
@@ -115,7 +115,7 @@ interface CorreoForm {
 
           @if (correos.length < 4) {
             <button type="button" class="btn btn-secondary btn-sm mt-2" (click)="addCorreo()">
-              ➕ {{ i18n.language() === 'fr' ? 'Ajouter un courriel' : 'Agregar correo' }}
+              ➕ {{ i18n.t('actions.add_email') }}
             </button>
           }
         </div>

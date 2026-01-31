@@ -14,10 +14,10 @@ import { PagosService } from '../../../services/pagos.service';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="i18n.language() === 'fr' ? 'Télécharger un document' : 'Subir documento'"
+      [title]="i18n.t('documents.upload_title')"
       [loading]="loading"
       [canSave]="isFormValid()"
-      [saveButtonText]="i18n.language() === 'fr' ? 'Télécharger' : 'Subir'"
+      [saveButtonText]="i18n.t('documents.upload')"
       size="md"
       (closed)="onClose()"
       (saved)="onSave()"
@@ -31,13 +31,13 @@ import { PagosService } from '../../../services/pagos.service';
               <input type="radio" name="tipoDocumento" value="FACTURA" [(ngModel)]="form.tipoDocumento">
               <span class="type-icon">🧾</span>
               <span class="type-name">{{ i18n.t('documents.invoice') }}</span>
-              <span class="type-desc">{{ i18n.language() === 'fr' ? 'Facture du fournisseur' : 'Factura del proveedor' }}</span>
+              <span class="type-desc">{{ i18n.t('documents.invoice_desc') }}</span>
             </label>
             <label class="type-card" [class.selected]="form.tipoDocumento === 'DOCUMENTO_BANCO'">
               <input type="radio" name="tipoDocumento" value="DOCUMENTO_BANCO" [(ngModel)]="form.tipoDocumento">
               <span class="type-icon">🏦</span>
               <span class="type-name">{{ i18n.t('documents.bank_doc') }}</span>
-              <span class="type-desc">{{ i18n.language() === 'fr' ? 'Relevé bancaire pour vérification' : 'Extracto bancario para verificación' }}</span>
+              <span class="type-desc">{{ i18n.t('documents.bank_doc_desc') }}</span>
             </label>
           </div>
         </div>
@@ -45,9 +45,9 @@ import { PagosService } from '../../../services/pagos.service';
         <!-- Asociar a pago (solo para facturas) -->
         @if (form.tipoDocumento === 'FACTURA') {
           <div class="form-group">
-            <label class="form-label">{{ i18n.language() === 'fr' ? 'Associer au paiement' : 'Asociar a pago' }}</label>
+            <label class="form-label">{{ i18n.t('actions.assoc_payment') }}</label>
             <select class="form-control" [(ngModel)]="form.pagoId" name="pagoId">
-              <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Aucun' : 'Ninguno' }}</option>
+              <option [ngValue]="null">---</option>
               @for (pago of pagos; track pago.id) {
                 <option [ngValue]="pago.id">{{ pago.codigoReserva }} - {{ formatCurrency(pago.monto, pago.moneda) }}</option>
               }
@@ -59,13 +59,13 @@ import { PagosService } from '../../../services/pagos.service';
         @if (form.tipoDocumento === 'DOCUMENTO_BANCO') {
           <div class="info-box">
             <span class="info-icon">ℹ️</span>
-            <p>{{ i18n.language() === 'fr' ? 'Les documents bancaires sont utilisés pour vérifier les paiements. Une fois téléchargé, vous pourrez sélectionner les paiements à marquer comme vérifiés.' : 'Los documentos bancarios se usan para verificar pagos. Una vez subido, podrás seleccionar los pagos a marcar como verificados.' }}</p>
+            <p>{{ i18n.t('documents.bank_info_text') }}</p>
           </div>
         }
 
         <!-- Archivo -->
         <div class="form-group">
-          <label class="form-label required">{{ i18n.language() === 'fr' ? 'Fichier' : 'Archivo' }}</label>
+          <label class="form-label required">{{ i18n.t('documents.file') }}</label>
           <div 
             class="file-dropzone" 
             [class.has-file]="form.file"
@@ -82,10 +82,10 @@ import { PagosService } from '../../../services/pagos.service';
             } @else {
               <div class="dropzone-content">
                 <span class="dropzone-icon">📁</span>
-                <p>{{ i18n.language() === 'fr' ? 'Glissez-déposez un fichier ici ou' : 'Arrastra un archivo aquí o' }}</p>
+                <p>{{ i18n.t('documents.dropzone_text') }}</p>
                 <label class="file-select-btn">
                   <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)">
-                  {{ i18n.language() === 'fr' ? 'Parcourir' : 'Seleccionar' }}
+                  {{ i18n.t('actions.browse') }}
                 </label>
                 <small>PDF, JPG, PNG (max 10MB)</small>
               </div>
@@ -136,6 +136,7 @@ import { PagosService } from '../../../services/pagos.service';
       cursor: pointer;
       transition: all var(--transition-fast);
       text-align: center;
+      position: relative;
 
       input {
         position: absolute;
@@ -218,7 +219,7 @@ import { PagosService } from '../../../services/pagos.service';
       gap: var(--spacing-sm);
 
       .file-icon { font-size: 24px; }
-      .file-name { font-weight: 500; font-size: 14px; color: var(--text-primary); }
+      .file-name { font-weight: 500; font-size: 14px; color: var(--text-primary); width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
       .file-size { font-size: 12px; color: var(--text-muted); }
     }
 
@@ -232,6 +233,9 @@ import { PagosService } from '../../../services/pagos.service';
       border-radius: 50%;
       cursor: pointer;
       font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
       &:hover { background: #dc3545; color: white; }
     }

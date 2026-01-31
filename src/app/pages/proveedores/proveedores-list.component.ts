@@ -16,7 +16,7 @@ import { ProveedoresService } from '../../services/proveedores.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('suppliers.title') }}</h1>
-          <p class="header-subtitle">{{ proveedores.length }} {{ i18n.language() === 'fr' ? 'fournisseurs actifs' : 'proveedores activos' }}</p>
+          <p class="header-subtitle">{{ proveedores.length }} {{ i18n.t('suppliers.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -37,7 +37,7 @@ import { ProveedoresService } from '../../services/proveedores.service';
           </div>
           <div class="filter-group">
             <select class="form-control" [(ngModel)]="filterService">
-              <option value="">{{ i18n.language() === 'fr' ? 'Tous les services' : 'Todos los servicios' }}</option>
+              <option value="">{{ i18n.t('filter.all_services') }}</option>
               <option value="Assurance">Assurance</option>
               <option value="Hotels">Hotels</option>
               <option value="Excursion">Excursion</option>
@@ -98,7 +98,7 @@ import { ProveedoresService } from '../../services/proveedores.service';
             }
 
             <div class="supplier-actions">
-              <button class="btn btn-secondary btn-sm">{{ i18n.t('actions.view') }}</button>
+              <button class="btn btn-secondary btn-sm" (click)="openEditModal(proveedor)">{{ i18n.t('actions.view') }}</button>
               <button class="btn btn-primary btn-sm" (click)="openEditModal(proveedor)">{{ i18n.t('actions.edit') }}</button>
             </div>
           </div>

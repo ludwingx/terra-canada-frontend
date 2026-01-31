@@ -14,17 +14,17 @@ import { CorreosService } from '../../services/correos.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('emails.title') }}</h1>
-          <p class="header-subtitle">{{ getPendingCount() }} {{ i18n.language() === 'fr' ? 'en attente' : 'pendientes' }}</p>
+          <p class="header-subtitle">{{ getPendingCount() }} {{ i18n.t('emails.pending_count') }}</p>
         </div>
       </div>
 
       <!-- Tabs -->
       <div class="tabs mb-3">
         <button class="tab" [class.active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
-          ⏳ {{ i18n.language() === 'fr' ? 'En attente' : 'Pendientes' }} ({{ getPendingCount() }})
+          ⏳ {{ i18n.t('emails.pending_count') }} ({{ getPendingCount() }})
         </button>
         <button class="tab" [class.active]="activeTab === 'sent'" (click)="activeTab = 'sent'">
-          ✅ {{ i18n.language() === 'fr' ? 'Envoyés' : 'Enviados' }} ({{ getSentCount() }})
+          ✅ {{ i18n.t('emails.sent_count') }} ({{ getSentCount() }})
         </button>
       </div>
 
@@ -75,7 +75,7 @@ import { CorreosService } from '../../services/correos.service';
 
       <app-modal
         [isOpen]="isModalOpen"
-        [title]="i18n.language() === 'fr' ? 'Détail du courriel' : 'Detalle del correo'"
+        [title]="i18n.t('emails.detail_title')"
         [showFooter]="false"
         size="xl"
         (closed)="closeModal()"
@@ -114,7 +114,7 @@ import { CorreosService } from '../../services/correos.service';
             </div>
 
             <div class="payments-section">
-              <h3 class="section-title">{{ i18n.language() === 'fr' ? 'Paiements inclus' : 'Pagos incluidos' }}</h3>
+              <h3 class="section-title">{{ i18n.t('emails.payments_included') }}</h3>
               <div class="table-container">
                 <table>
                   <thead>

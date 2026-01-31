@@ -19,7 +19,7 @@ import { forkJoin } from 'rxjs';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? (i18n.language() === 'fr' ? 'Modifier le paiement' : 'Editar pago') : (i18n.language() === 'fr' ? 'Nouveau paiement' : 'Nuevo pago')"
+      [title]="isEdit ? i18n.t('payments.edit_title') : i18n.t('payments.new_title')"
       [loading]="loading"
       [canSave]="isFormValid()"
       size="lg"
@@ -28,7 +28,7 @@ import { forkJoin } from 'rxjs';
     >
       <form class="form-grid">
         <div class="section full-width">
-          <div class="section-title">{{ i18n.language() === 'fr' ? 'Informations du paiement' : 'Información del pago' }}</div>
+          <div class="section-title">{{ i18n.t('payments.info_section') }}</div>
           <div class="section-grid">
             <!-- Código de Reserva -->
             <div class="form-group">
@@ -46,7 +46,7 @@ import { forkJoin } from 'rxjs';
             <div class="form-group">
               <label class="form-label required">{{ i18n.t('payments.supplier') }}</label>
               <select class="form-control" [(ngModel)]="form.proveedorId" name="proveedorId">
-                <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner un fournisseur' : 'Seleccionar un proveedor' }}</option>
+                <option [ngValue]="null">{{ i18n.t('payments.select_supplier') }}</option>
                 @for (p of proveedores; track p.id) {
                   <option [ngValue]="p.id">{{ p.nombre }}</option>
                 }
@@ -91,8 +91,8 @@ import { forkJoin } from 'rxjs';
               (click)="form.tipoMedioPago = 'TARJETA'; onTipoChange()"
             >
               <div class="method-icon">💳</div>
-              <div class="method-name">{{ i18n.language() === 'fr' ? 'Carte de crédit' : 'Tarjeta de crédito' }}</div>
-              <div class="method-desc">{{ i18n.language() === 'fr' ? 'Sélectionner une carte' : 'Selecciona una tarjeta' }}</div>
+              <div class="method-name">{{ i18n.t('cards.title') }}</div>
+              <div class="method-desc">{{ i18n.t('payments.select_card_hint') }}</div>
             </button>
             <button
               type="button"
@@ -101,8 +101,8 @@ import { forkJoin } from 'rxjs';
               (click)="form.tipoMedioPago = 'CUENTA_BANCARIA'; onTipoChange()"
             >
               <div class="method-icon">🏦</div>
-              <div class="method-name">{{ i18n.language() === 'fr' ? 'Compte bancaire' : 'Cuenta bancaria' }}</div>
-              <div class="method-desc">{{ i18n.language() === 'fr' ? 'Sélectionner un compte' : 'Selecciona una cuenta' }}</div>
+              <div class="method-name">{{ i18n.t('accounts.title') }}</div>
+              <div class="method-desc">{{ i18n.t('payments.select_account_hint') }}</div>
             </button>
           </div>
 
@@ -110,17 +110,17 @@ import { forkJoin } from 'rxjs';
             <!-- Selección de Tarjeta/Cuenta -->
             <div class="form-group">
               @if (form.tipoMedioPago === 'TARJETA') {
-                <label class="form-label required">{{ i18n.language() === 'fr' ? 'Carte' : 'Tarjeta' }}</label>
+                <label class="form-label required">{{ i18n.t('filter.cards') }}</label>
                 <select class="form-control" [(ngModel)]="form.tarjetaId" name="tarjetaId">
-                  <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
+                  <option [ngValue]="null">{{ i18n.t('actions.select') }}</option>
                   @for (t of tarjetasFiltradas; track t.id) {
                     <option [ngValue]="t.id">****{{ t.ultimos4Digitos }} - {{ t.nombreTitular }} ({{ formatCurrency(t.saldoDisponible, t.moneda) }})</option>
                   }
                 </select>
               } @else {
-                <label class="form-label required">{{ i18n.language() === 'fr' ? 'Compte' : 'Cuenta' }}</label>
+                <label class="form-label required">{{ i18n.t('filter.accounts') }}</label>
                 <select class="form-control" [(ngModel)]="form.cuentaBancariaId" name="cuentaBancariaId">
-                  <option [ngValue]="null">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
+                  <option [ngValue]="null">{{ i18n.t('actions.select') }}</option>
                   @for (c of cuentasFiltradas; track c.id) {
                     <option [ngValue]="c.id">{{ c.nombreBanco }} - ****{{ c.ultimos4Digitos }} ({{ c.moneda }})</option>
                   }
@@ -133,10 +133,10 @@ import { forkJoin } from 'rxjs';
         <!-- Clientes asociados -->
         <div class="form-group full-width">
           <div class="clientes-header">
-            <label class="form-label">{{ i18n.language() === 'fr' ? 'Clients associés (hôtels)' : 'Clientes asociados (hoteles)' }}</label>
+            <label class="form-label">{{ i18n.t('payments.associated_clients') }}</label>
             @if (!isEdit) {
               <button type="button" class="btn btn-secondary btn-sm" (click)="openNewClienteModal()">
-                + {{ i18n.language() === 'fr' ? 'Nouveau client' : 'Nuevo cliente' }}
+                + {{ i18n.t('clients.new') }}
               </button>
             }
           </div>
@@ -151,7 +151,7 @@ import { forkJoin } from 'rxjs';
               <input
                 type="text"
                 class="chip-input"
-                [placeholder]="i18n.language() === 'fr' ? 'Ajouter un client...' : 'Agregar cliente...'"
+                [placeholder]="i18n.t('payments.add_client_placeholder')"
                 [(ngModel)]="clienteSearch"
                 name="clienteSearch"
                 (focus)="openClienteDropdown()"
@@ -180,7 +180,7 @@ import { forkJoin } from 'rxjs';
 
         <!-- Fecha esperada de débito -->
         <div class="form-group">
-          <label class="form-label">{{ i18n.language() === 'fr' ? 'Date prévue de débit' : 'Fecha esperada de débito' }}</label>
+          <label class="form-label">{{ i18n.t('payments.expected_debit_date') }}</label>
           <input 
             type="date" 
             class="form-control" 
@@ -191,7 +191,7 @@ import { forkJoin } from 'rxjs';
 
         <!-- Descripción -->
         <div class="form-group">
-          <label class="form-label">{{ i18n.language() === 'fr' ? 'Description' : 'Descripción' }}</label>
+          <label class="form-label">{{ i18n.t('audit.description') }}</label>
           <input 
             type="text" 
             class="form-control" 

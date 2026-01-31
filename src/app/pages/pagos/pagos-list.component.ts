@@ -16,7 +16,7 @@ import { PagosService } from '../../services/pagos.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('payments.title') }}</h1>
-          <p class="header-subtitle">{{ pagos.length }} {{ i18n.language() === 'fr' ? 'paiements' : 'pagos' }}</p>
+          <p class="header-subtitle">{{ pagos.length }} {{ i18n.t('payments.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -37,7 +37,7 @@ import { PagosService } from '../../services/pagos.service';
           </div>
           <div class="filter-group">
             <select class="form-control" [(ngModel)]="filterStatus">
-              <option value="">{{ i18n.language() === 'fr' ? 'Tous les statuts' : 'Todos los estados' }}</option>
+              <option value="">{{ i18n.t('filter.all_status') }}</option>
               <option value="pending">{{ i18n.t('status.pending') }}</option>
               <option value="paid">{{ i18n.t('status.paid') }}</option>
               <option value="verified">{{ i18n.t('status.verified') }}</option>
@@ -45,9 +45,9 @@ import { PagosService } from '../../services/pagos.service';
           </div>
           <div class="filter-group">
             <select class="form-control" [(ngModel)]="filterMethod">
-              <option value="">{{ i18n.language() === 'fr' ? 'Tous les moyens' : 'Todos los medios' }}</option>
-              <option value="TARJETA">{{ i18n.language() === 'fr' ? 'Cartes' : 'Tarjetas' }}</option>
-              <option value="CUENTA_BANCARIA">{{ i18n.language() === 'fr' ? 'Comptes' : 'Cuentas' }}</option>
+              <option value="">{{ i18n.t('filter.all_methods') }}</option>
+              <option value="TARJETA">{{ i18n.t('filter.cards') }}</option>
+              <option value="CUENTA_BANCARIA">{{ i18n.t('filter.accounts') }}</option>
             </select>
           </div>
           <button class="btn btn-secondary">
@@ -67,9 +67,9 @@ import { PagosService } from '../../services/pagos.service';
                 <th>{{ i18n.t('payments.client') }}</th>
                 <th>{{ i18n.t('payments.amount') }}</th>
                 <th>{{ i18n.t('payments.method') }}</th>
-                <th>{{ i18n.language() === 'fr' ? 'Paiement' : 'Pago' }}</th>
-                <th>{{ i18n.language() === 'fr' ? 'Vérification' : 'Verificación' }}</th>
-                <th>{{ i18n.language() === 'fr' ? 'Gmail' : 'Gmail' }}</th>
+                <th>{{ i18n.t('payments.pago') }}</th>
+                <th>{{ i18n.t('payments.verificacion') }}</th>
+                <th>Gmail</th>
                 <th>{{ i18n.t('payments.date') }}</th>
                 <th>{{ i18n.t('payments.actions') }}</th>
               </tr>
@@ -85,7 +85,7 @@ import { PagosService } from '../../services/pagos.service';
                   </td>
                   <td>
                     <span class="method-badge" [class.tarjeta]="pago.tipoMedioPago === 'TARJETA'">
-                      {{ pago.tipoMedioPago === 'TARJETA' ? (i18n.language() === 'fr' ? 'Carte' : 'Tarjeta') : (i18n.language() === 'fr' ? 'Compte' : 'Cuenta') }}
+                      {{ pago.tipoMedioPago === 'TARJETA' ? i18n.t('filter.cards') : i18n.t('filter.accounts') }}
                       @if (pago.tipoMedioPago === 'TARJETA') {
                         <span>****{{ pago.tarjeta?.ultimos4Digitos || '0000' }}</span>
                       }
@@ -102,20 +102,20 @@ import { PagosService } from '../../services/pagos.service';
                     @if (pago.verificado) {
                       <span class="badge badge-verified">{{ i18n.t('status.verified') }}</span>
                     } @else {
-                      <span class="badge badge-pending">{{ i18n.language() === 'fr' ? 'Non vérifié' : 'No verificado' }}</span>
+                      <span class="badge badge-pending">{{ i18n.t('payments.non_verified') }}</span>
                     }
                   </td>
                   <td>
                     @if (pago.gmailEnviado) {
-                      <span>{{ i18n.language() === 'fr' ? 'Envoyé' : 'Enviado' }}</span>
+                      <span>{{ i18n.t('emails.sent') }}</span>
                     } @else {
-                      <span>{{ i18n.language() === 'fr' ? 'En attente' : 'Pendiente' }}</span>
+                      <span>{{ i18n.t('emails.pending') }}</span>
                     }
                   </td>
                   <td class="text-muted">{{ formatDate(pago.fechaCreacion) }}</td>
                   <td>
                     <div class="actions-cell">
-                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}">👁️</button>
+                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openEditModal(pago)">👁️</button>
                       <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.edit') }}" [disabled]="pago.verificado" (click)="openEditModal(pago)">✏️</button>
                       <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.delete') }}" [disabled]="pago.gmailEnviado">🗑️</button>
                     </div>
@@ -248,7 +248,7 @@ export class PagosListComponent implements OnInit {
   }
 
   deletePago(id: number): void {
-    if (confirm(this.i18n.language() === 'fr' ? 'Êtes-vous sûr de vouloir supprimer ce paiement ?' : '¿Está seguro de que desea eliminar este pago?')) {
+    if (confirm(this.i18n.t('msg.confirm_delete_payment'))) {
       this.pagosService.cancelarPago(id).subscribe({
         next: () => this.loadPagos(),
         error: (err) => console.error('Error eliminando pago:', err)

@@ -13,7 +13,7 @@ import { TarjetasService } from '../../../services/tarjetas.service';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? (i18n.language() === 'fr' ? 'Modifier la carte' : 'Editar tarjeta') : (i18n.language() === 'fr' ? 'Nouvelle carte' : 'Nueva tarjeta')"
+      [title]="isEdit ? i18n.t('actions.edit_card') : i18n.t('actions.new_card')"
       [loading]="loading"
       [canSave]="isFormValid()"
       size="md"
@@ -29,7 +29,7 @@ import { TarjetasService } from '../../../services/tarjetas.service';
             class="form-control" 
             [(ngModel)]="form.nombreTitular" 
             name="nombreTitular"
-            [placeholder]="i18n.language() === 'fr' ? 'Nom du titulaire' : 'Nombre del titular'"
+            [placeholder]="i18n.t('cards.holder_placeholder')"
             style="text-transform: uppercase;"
           >
         </div>
@@ -52,7 +52,7 @@ import { TarjetasService } from '../../../services/tarjetas.service';
         <div class="form-group">
           <label class="form-label">{{ i18n.t('cards.type') }}</label>
           <select class="form-control" [(ngModel)]="form.tipoTarjeta" name="tipoTarjeta">
-            <option value="">{{ i18n.language() === 'fr' ? 'Sélectionner' : 'Seleccionar' }}</option>
+            <option value="">{{ i18n.t('actions.select') }}</option>
             <option value="Visa">Visa</option>
             <option value="Visa Infinite">Visa Infinite</option>
             <option value="Visa Business">Visa Business</option>

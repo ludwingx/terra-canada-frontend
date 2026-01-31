@@ -31,20 +31,10 @@ export class UsuariosService {
     } as Usuario;
   }
 
-  getUsuarios(): Observable<Usuario[]> {
-    if (this.usuarios$) {
-      return this.usuarios$;
-    }
-
-    this.usuarios$ = this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`usuarios`).pipe(
-      map(res => (res.data || []).map(u => this.mapUsuario(u))),
-      tap({
-        error: () => this.clearCache()
-      }),
-      shareReplay(1)
+  getUsuarios(forceRefresh: boolean = false): Observable<Usuario[]> {
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`usuarios`).pipe(
+      map(res => (res.data || []).map(u => this.mapUsuario(u)))
     );
-
-    return this.usuarios$;
   }
 
   getUsuario(id: number): Observable<Usuario> {

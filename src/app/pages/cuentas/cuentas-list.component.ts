@@ -14,7 +14,7 @@ import { CuentasService } from '../../services/cuentas.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('accounts.title') }}</h1>
-          <p class="header-subtitle">{{ cuentas.length }} {{ i18n.language() === 'fr' ? 'comptes enregistrés' : 'cuentas registradas' }}</p>
+          <p class="header-subtitle">{{ cuentas.length }} {{ i18n.t('accounts.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -57,7 +57,10 @@ import { CuentasService } from '../../services/cuentas.service';
                     }
                   </td>
                   <td>
-                    <button class="btn btn-secondary btn-sm" (click)="openEditModal(cuenta)">{{ i18n.t('actions.edit') }}</button>
+                    <div class="actions-cell">
+                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openEditModal(cuenta)">👁️</button>
+                      <button class="btn btn-secondary btn-sm" (click)="openEditModal(cuenta)">{{ i18n.t('actions.edit') }}</button>
+                    </div>
                   </td>
                 </tr>
               }

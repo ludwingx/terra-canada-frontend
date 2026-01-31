@@ -4,17 +4,18 @@ import { I18nService } from '../../services/i18n.service';
 import { Documento } from '../../models/interfaces';
 import { DocumentoModalComponent } from '../../components/modals/documento-modal/documento-modal.component';
 import { DocumentosService } from '../../services/documentos.service';
+import { ModalComponent } from '../../components/shared/modal/modal.component';
 
 @Component({
   selector: 'app-documentos-list',
   standalone: true,
-  imports: [CommonModule, DocumentoModalComponent],
+  imports: [CommonModule, DocumentoModalComponent, ModalComponent],
   template: `
     <div class="documentos-page">
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('documents.title') }}</h1>
-          <p class="header-subtitle">{{ documentos.length }} {{ i18n.language() === 'fr' ? 'documents' : 'documentos' }}</p>
+          <p class="header-subtitle">{{ documentos.length }} {{ i18n.t('documents.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openUploadModal()">
           <span>📤</span>
@@ -61,7 +62,7 @@ import { DocumentosService } from '../../services/documentos.service';
                   <td>{{ doc.usuario?.nombreCompleto || 'Admin' }}</td>
                   <td class="text-muted">{{ formatDate(doc.fechaSubida) }}</td>
                   <td>
-                    <button class="btn btn-secondary btn-sm">👁️ {{ i18n.t('actions.view') }}</button>
+                    <button class="btn btn-secondary btn-sm" (click)="openViewModal(doc)">👁️ {{ i18n.t('actions.view') }}</button>
                   </td>
                 </tr>
               }
@@ -71,10 +72,61 @@ import { DocumentosService } from '../../services/documentos.service';
       </div>
 
       <app-documento-modal
-        [isOpen]="isModalOpen"
-        (closed)="closeModal()"
+        [isOpen]="isUploadModalOpen"
+        (closed)="closeUploadModal()"
         (saved)="onDocumentoSaved($event)"
       />
+
+      <app-modal
+        [isOpen]="isViewModalOpen"
+        [title]="i18n.t('documents.view_title')"
+        (closed)="closeViewModal()"
+        [showFooter]="false"
+        size="md"
+      >
+        @if (selectedDocumento) {
+          <div class="document-viewer">
+            <div class="viewer-details">
+              <div class="detail-item">
+                <span class="label">{{ i18n.t('documents.filename') }}</span>
+                <span class="value">{{ selectedDocumento.nombreArchivo }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">{{ i18n.t('documents.type') }}</span>
+                <span class="value">
+                  @if (selectedDocumento.tipoDocumento === 'FACTURA') {
+                    {{ i18n.t('documents.invoice') }}
+                  } @else {
+                    {{ i18n.t('documents.bank_doc') }}
+                  }
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">{{ i18n.t('documents.uploaded_by') }}</span>
+                <span class="value">{{ selectedDocumento.usuario?.nombreCompleto || 'Admin' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">{{ i18n.t('documents.uploaded_date') }}</span>
+                <span class="value">{{ formatDate(selectedDocumento.fechaSubida) }}</span>
+              </div>
+              @if (selectedDocumento.pago) {
+                <div class="detail-item">
+                  <span class="label">{{ i18n.t('payments.code') }}</span>
+                  <span class="value"><code class="text-primary">{{ selectedDocumento.pago.codigoReserva }}</code></span>
+                </div>
+              }
+            </div>
+            
+            <div class="document-preview-placeholder">
+              <span class="icon">📄</span>
+              <p>{{ i18n.t('documents.preview_placeholder') }}</p>
+              <a [href]="selectedDocumento.url" target="_blank" class="btn btn-primary">
+                {{ i18n.t('actions.open_full') }}
+              </a>
+            </div>
+          </div>
+        }
+      </app-modal>
     </div>
   `,
   styles: [`
@@ -90,13 +142,47 @@ import { DocumentosService } from '../../services/documentos.service';
       border-radius: 4px;
       font-family: monospace;
     }
+    .document-viewer {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+    }
+    .viewer-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+    }
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      .label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+      .value { font-size: 13px; color: var(--text-primary); }
+    }
+    .document-preview-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-xl);
+      background: var(--bg-hover);
+      border-radius: var(--border-radius);
+      border: 2px dashed var(--border-color);
+      text-align: center;
+      gap: var(--spacing-md);
+
+      .icon { font-size: 48px; }
+      p { margin: 0; font-size: 14px; color: var(--text-secondary); }
+    }
   `]
 })
 export class DocumentosListComponent implements OnInit {
   i18n = inject(I18nService);
   private documentosService = inject(DocumentosService);
 
-  isModalOpen = false;
+  isUploadModalOpen = false;
+  isViewModalOpen = false;
+  selectedDocumento?: Documento;
   loading = false;
   documentos: Documento[] = [];
 
@@ -119,16 +205,26 @@ export class DocumentosListComponent implements OnInit {
   }
 
   openUploadModal(): void {
-    this.isModalOpen = true;
+    this.isUploadModalOpen = true;
   }
 
-  closeModal(): void {
-    this.isModalOpen = false;
+  closeUploadModal(): void {
+    this.isUploadModalOpen = false;
+  }
+
+  openViewModal(doc: Documento): void {
+    this.selectedDocumento = doc;
+    this.isViewModalOpen = true;
+  }
+
+  closeViewModal(): void {
+    this.isViewModalOpen = false;
+    this.selectedDocumento = undefined;
   }
 
   onDocumentoSaved(documento: Documento): void {
     this.loadDocumentos();
-    this.closeModal();
+    this.closeUploadModal();
   }
 
   formatDate(date: Date): string {

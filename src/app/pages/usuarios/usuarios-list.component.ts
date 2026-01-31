@@ -14,7 +14,7 @@ import { UsuariosService } from '../../services/usuarios.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('users.title') }}</h1>
-          <p class="header-subtitle">{{ usuarios.length }} {{ i18n.language() === 'fr' ? 'utilisateurs' : 'usuarios' }}</p>
+          <p class="header-subtitle">{{ usuarios.length }} {{ i18n.t('users.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -48,7 +48,7 @@ import { UsuariosService } from '../../services/usuarios.service';
                   <td>{{ user.correo }}</td>
                   <td>
                     <span class="role-badge" [class]="'role-' + user.rol?.nombre?.toLowerCase()">
-                      {{ user.rol?.nombre }}
+                      {{ i18n.t('role.' + (user.rol?.nombre?.toLowerCase() || 'equipo')) }}
                     </span>
                   </td>
                   <td>
@@ -58,8 +58,11 @@ import { UsuariosService } from '../../services/usuarios.service';
                       <span class="badge badge-inactive">{{ i18n.t('status.inactive') }}</span>
                     }
                   </td>
-                  <td>
-                    <button class="btn btn-secondary btn-sm" (click)="openEditModal(user)">{{ i18n.t('actions.edit') }}</button>
+                   <td>
+                    <div class="actions-cell">
+                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openEditModal(user)">👁️</button>
+                      <button class="btn btn-icon btn-sm" (click)="openEditModal(user)">✏️</button>
+                    </div>
                   </td>
                 </tr>
               }

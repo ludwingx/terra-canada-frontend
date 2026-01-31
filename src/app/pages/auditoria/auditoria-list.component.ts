@@ -15,7 +15,7 @@ import { AuditoriaService } from '../../services/auditoria.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('audit.title') }}</h1>
-          <p class="header-subtitle">{{ eventos.length }} {{ i18n.language() === 'fr' ? 'événements enregistrés' : 'eventos registrados' }}</p>
+          <p class="header-subtitle">{{ eventos.length }} {{ i18n.t('audit.entity') }}</p>
         </div>
         <button class="btn btn-secondary">
           <span>📥</span>
@@ -27,13 +27,13 @@ import { AuditoriaService } from '../../services/auditoria.service';
       <div class="card mb-3">
         <div class="filters-row">
           <select class="form-control" [(ngModel)]="filterType" style="max-width: 200px;">
-            <option value="">{{ i18n.language() === 'fr' ? 'Tous les types' : 'Todos los tipos' }}</option>
-            <option value="INICIO_SESION">{{ i18n.language() === 'fr' ? 'Connexion' : 'Inicio sesión' }}</option>
-            <option value="CREAR">{{ i18n.language() === 'fr' ? 'Création' : 'Creación' }}</option>
-            <option value="ACTUALIZAR">{{ i18n.language() === 'fr' ? 'Mise à jour' : 'Actualización' }}</option>
-            <option value="ELIMINAR">{{ i18n.language() === 'fr' ? 'Suppression' : 'Eliminación' }}</option>
-            <option value="VERIFICAR_PAGO">{{ i18n.language() === 'fr' ? 'Vérification' : 'Verificación' }}</option>
-            <option value="ENVIAR_CORREO">{{ i18n.language() === 'fr' ? 'Envoi courriel' : 'Envío correo' }}</option>
+            <option value="">{{ i18n.t('audit.all_types') }}</option>
+            <option value="INICIO_SESION">{{ i18n.t('audit.type_login') }}</option>
+            <option value="CREAR">{{ i18n.t('audit.type_create') }}</option>
+            <option value="ACTUALIZAR">{{ i18n.t('audit.type_update') }}</option>
+            <option value="ELIMINAR">{{ i18n.t('audit.type_delete') }}</option>
+            <option value="VERIFICAR_PAGO">{{ i18n.t('audit.type_verify') }}</option>
+            <option value="ENVIAR_CORREO">{{ i18n.t('audit.type_email') }}</option>
           </select>
           <input type="date" class="form-control" [(ngModel)]="filterDate" style="max-width: 180px;">
         </div>
@@ -80,7 +80,7 @@ import { AuditoriaService } from '../../services/auditoria.service';
 
       <app-modal
         [isOpen]="isModalOpen"
-        [title]="i18n.language() === 'fr' ? 'Détail de l\\'événement' : 'Detalle del evento'"
+        [title]="i18n.t('audit.detail_title')"
         [showFooter]="false"
         size="md"
         (closed)="closeModal()"
@@ -227,14 +227,8 @@ export class AuditoriaListComponent implements OnInit {
   }
 
   getEventLabel(type: string): string {
-    const labels: Record<string, { fr: string; es: string }> = {
-      INICIO_SESION: { fr: 'Connexion', es: 'Inicio sesión' },
-      CREAR: { fr: 'Création', es: 'Creación' },
-      ACTUALIZAR: { fr: 'Mise à jour', es: 'Actualización' },
-      ELIMINAR: { fr: 'Suppression', es: 'Eliminación' },
-      VERIFICAR_PAGO: { fr: 'Vérification', es: 'Verificación' },
-      ENVIAR_CORREO: { fr: 'Envoi', es: 'Envío' }
-    };
-    return labels[type]?.[this.i18n.language()] || type;
+    const key = `audit.type_${type.toLowerCase().replace('verificar_pago', 'verify').replace('enviar_correo', 'email').replace('inicio_sesion', 'login').replace('crear', 'create').replace('actualizar', 'update').replace('eliminar', 'delete')}`;
+    const label = this.i18n.t(key);
+    return label !== key ? label : type;
   }
 }

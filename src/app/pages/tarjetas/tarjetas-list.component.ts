@@ -15,7 +15,7 @@ import { TarjetasService } from '../../services/tarjetas.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('cards.title') }}</h1>
-          <p class="header-subtitle">{{ tarjetas.length }} {{ i18n.language() === 'fr' ? 'cartes enregistrées' : 'tarjetas registradas' }}</p>
+          <p class="header-subtitle">{{ tarjetas.length }} {{ i18n.t('cards.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -63,7 +63,7 @@ import { TarjetasService } from '../../services/tarjetas.service';
             </div>
 
             <div class="card-actions">
-              <button class="btn btn-secondary btn-sm">{{ i18n.t('actions.view') }}</button>
+              <button class="btn btn-secondary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.view') }}</button>
               <button class="btn btn-primary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.edit') }}</button>
             </div>
 

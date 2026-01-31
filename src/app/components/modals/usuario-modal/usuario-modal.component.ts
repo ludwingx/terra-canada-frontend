@@ -14,7 +14,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? (i18n.language() === 'fr' ? 'Modifier l\\'utilisateur' : 'Editar usuario') : (i18n.language() === 'fr' ? 'Nouvel utilisateur' : 'Nuevo usuario')"
+      [title]="isEdit ? i18n.t('actions.edit_user') : i18n.t('actions.new_user')"
       [loading]="loading"
       [canSave]="isFormValid()"
       size="md"
@@ -34,7 +34,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
             [disabled]="isEdit"
           >
           @if (!isEdit) {
-            <small class="form-hint">{{ i18n.language() === 'fr' ? 'Ne peut pas être modifié après création' : 'No se puede modificar después de crear' }}</small>
+            <small class="form-hint">{{ i18n.t('users.no_edit_hint') }}</small>
           }
         </div>
 
@@ -46,7 +46,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
             class="form-control" 
             [(ngModel)]="form.nombreCompleto" 
             name="nombreCompleto"
-            [placeholder]="i18n.language() === 'fr' ? 'Prénom Nom' : 'Nombre Apellido'"
+            [placeholder]="i18n.t('users.fullname_placeholder')"
           >
         </div>
 
@@ -96,13 +96,13 @@ import { UsuariosService } from '../../../services/usuarios.service';
         <!-- Contraseña (solo para nuevo usuario) -->
         @if (!isEdit) {
           <div class="form-group">
-            <label class="form-label required">{{ i18n.language() === 'fr' ? 'Mot de passe' : 'Contraseña' }}</label>
+            <label class="form-label required">{{ i18n.t('users.password') }}</label>
             <input 
               type="password" 
               class="form-control" 
               [(ngModel)]="form.password" 
               name="password"
-              [placeholder]="i18n.language() === 'fr' ? 'Minimum 8 caractères' : 'Mínimo 8 caracteres'"
+              [placeholder]="i18n.t('users.password_hint')"
             >
           </div>
         }

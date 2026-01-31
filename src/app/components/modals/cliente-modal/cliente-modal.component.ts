@@ -13,7 +13,7 @@ import { ClientesService } from '../../../services/clientes.service';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? (i18n.language() === 'fr' ? 'Modifier le client' : 'Editar cliente') : (i18n.language() === 'fr' ? 'Nouveau client' : 'Nuevo cliente')"
+      [title]="isEdit ? i18n.t('actions.edit_client') : i18n.t('actions.new_client')"
       [loading]="loading"
       [canSave]="isFormValid()"
       size="md"
@@ -29,7 +29,7 @@ import { ClientesService } from '../../../services/clientes.service';
             class="form-control" 
             [(ngModel)]="form.nombre" 
             name="nombre"
-            [placeholder]="i18n.language() === 'fr' ? 'Nom de l\\'hôtel/client' : 'Nombre del hotel/cliente'"
+            [placeholder]="i18n.t('clients.name_placeholder')"
           >
         </div>
 
@@ -41,7 +41,7 @@ import { ClientesService } from '../../../services/clientes.service';
             class="form-control" 
             [(ngModel)]="form.ubicacion" 
             name="ubicacion"
-            [placeholder]="i18n.language() === 'fr' ? 'Ville, Province' : 'Ciudad, Provincia'"
+            [placeholder]="i18n.t('clients.location_placeholder')"
           >
         </div>
 

@@ -16,7 +16,7 @@ import { ClientesService } from '../../services/clientes.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('clients.title') }}</h1>
-          <p class="header-subtitle">{{ clientes.length }} {{ i18n.language() === 'fr' ? 'clients enregistrés' : 'clientes registrados' }}</p>
+          <p class="header-subtitle">{{ clientes.length }} {{ i18n.t('clients.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -78,6 +78,7 @@ import { ClientesService } from '../../services/clientes.service';
                   </td>
                   <td>
                     <div class="actions-cell">
+                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openEditModal(cliente)">👁️</button>
                       <button class="btn btn-secondary btn-sm" (click)="openEditModal(cliente)">{{ i18n.t('actions.edit') }}</button>
                     </div>
                   </td>
