@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
-import { TarjetaCredito } from '../models/interfaces';
+import { TarjetaCredito, TipoMoneda } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +10,21 @@ import { TarjetaCredito } from '../models/interfaces';
 export class TarjetasService {
   private api = inject(ApiService);
   private auth = inject(AuthService);
+
+  private mapTarjeta(t: any): TarjetaCredito {
+    return {
+      id: Number(t?.id),
+      nombreTitular: String(t?.nombreTitular ?? t?.nombre_titular ?? ''),
+      ultimos4Digitos: String(t?.ultimos4Digitos ?? t?.ultimos_4_digitos ?? ''),
+      moneda: String(t?.moneda ?? 'CAD') as TipoMoneda,
+      limiteMensual: Number(t?.limiteMensual ?? t?.limite_mensual ?? 0),
+      saldoDisponible: Number(t?.saldoDisponible ?? t?.saldo_disponible ?? 0),
+      tipoTarjeta: t?.tipoTarjeta ?? t?.tipo_tarjeta ?? undefined,
+      activo: Boolean(t?.activo ?? true),
+      fechaCreacion: t?.fechaCreacion ?? t?.fecha_creacion,
+      fechaActualizacion: t?.fechaActualizacion ?? t?.fecha_actualizacion
+    } as TarjetaCredito;
+  }
 
   private getUsuarioIdForAudit(payload?: any): number | undefined {
     const explicit = payload?.usuario_id ?? payload?.usuarioId;
@@ -32,8 +47,8 @@ export class TarjetasService {
 
   getTarjetas(clienteId?: number): Observable<TarjetaCredito[]> {
     const params = clienteId ? { cliente_id: clienteId } : {};
-    return this.api.get<{success: boolean, data: TarjetaCredito[]}>(`tarjetas`, params).pipe(
-      map(res => res.data)
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`tarjetas`, params).pipe(
+      map(res => (res.data || []).map(t => this.mapTarjeta(t)))
     );
   }
 

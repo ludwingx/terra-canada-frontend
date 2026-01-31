@@ -11,6 +11,19 @@ export class ClientesService {
   private api = inject(ApiService);
   private auth = inject(AuthService);
 
+  private mapCliente(c: any): Cliente {
+    return {
+      id: Number(c?.id),
+      nombre: String(c?.nombre ?? ''),
+      ubicacion: c?.ubicacion ?? undefined,
+      telefono: c?.telefono ?? undefined,
+      correo: c?.correo ?? undefined,
+      activo: Boolean(c?.activo ?? true),
+      fechaCreacion: c?.fechaCreacion ?? c?.fecha_creacion,
+      fechaActualizacion: c?.fechaActualizacion ?? c?.fecha_actualizacion
+    } as Cliente;
+  }
+
   private getUsuarioIdForAudit(payload?: any): number | undefined {
     const explicit = payload?.usuario_id ?? payload?.usuarioId;
     if (typeof explicit === 'number' && !Number.isNaN(explicit)) return explicit;
@@ -19,8 +32,8 @@ export class ClientesService {
   }
 
   getClientes(): Observable<Cliente[]> {
-    return this.api.get<{success: boolean, data: Cliente[]}>(`clientes`).pipe(
-      map(res => res.data)
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`clientes`).pipe(
+      map(res => (res.data || []).map(c => this.mapCliente(c)))
     );
   }
 

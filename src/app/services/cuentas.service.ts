@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
-import { CuentaBancaria } from '../models/interfaces';
+import { CuentaBancaria, TipoMoneda } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -9,10 +9,23 @@ import { CuentaBancaria } from '../models/interfaces';
 export class CuentasService {
   private api = inject(ApiService);
 
+  private mapCuenta(c: any): CuentaBancaria {
+    return {
+      id: Number(c?.id),
+      nombreBanco: String(c?.nombreBanco ?? c?.nombre_banco ?? ''),
+      nombreCuenta: String(c?.nombreCuenta ?? c?.nombre_cuenta ?? ''),
+      ultimos4Digitos: String(c?.ultimos4Digitos ?? c?.ultimos_4_digitos ?? ''),
+      moneda: String(c?.moneda ?? 'CAD') as TipoMoneda,
+      activo: Boolean(c?.activo ?? true),
+      fechaCreacion: c?.fechaCreacion ?? c?.fecha_creacion,
+      fechaActualizacion: c?.fechaActualizacion ?? c?.fecha_actualizacion
+    } as CuentaBancaria;
+  }
+
   getCuentas(clienteId?: number): Observable<CuentaBancaria[]> {
     const params = clienteId ? { cliente_id: clienteId } : {};
-    return this.api.get<{success: boolean, data: CuentaBancaria[]}>(`cuentas`, params).pipe(
-      map(res => res.data)
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`cuentas`, params).pipe(
+      map(res => (res.data || []).map(c => this.mapCuenta(c)))
     );
   }
 
