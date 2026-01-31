@@ -1,0 +1,30 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <img src="assets/images/logo_terracanada.png" alt="Terra Canada" class="auth-logo" />
+    <h1>Iniciar sesión</h1>
+    <p class="auth-subtitle">Accede con tu usuario y contraseña.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <label>
+        Usuario
+        <input type="text" formControlName="username" placeholder="usuario" />
+      </label>
+
+      <label>
+        Contraseña
+        <input type="password" formControlName="password" placeholder="••••••••" />
+      </label>
+
+      <div class="auth-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+      <button type="submit" [disabled]="form.invalid || isSubmitting">
+        {{ isSubmitting ? 'Ingresando…' : 'Entrar' }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      ¿No tienes cuenta?
+      <a routerLink="/register">Crear cuenta</a>
+    </p>
+  </div>
+</div>

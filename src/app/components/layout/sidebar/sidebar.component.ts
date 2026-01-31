@@ -65,6 +65,17 @@ export class SidebarComponent implements OnInit {
     if (currentUser) {
       this.userName = currentUser.nombreCompleto || currentUser.nombreUsuario || 'Usuario';
       this.userInitials = this.extractInitials(this.userName);
+    } else if (this.authService.isAuthenticated()) {
+      this.authService.getMe().subscribe({
+        next: (user) => {
+          this.userName = user.nombreCompleto || user.nombreUsuario || 'Usuario';
+          this.userInitials = this.extractInitials(this.userName);
+        },
+        error: () => {
+          this.userName = 'Usuario';
+          this.userInitials = 'US';
+        }
+      });
     }
   }
 
@@ -72,6 +83,11 @@ export class SidebarComponent implements OnInit {
     this.activeRoute = route;
     this.updateExpandedFromRoute(route);
     this.router.navigateByUrl(route);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigateByUrl('/login');
   }
 
   isActive(route: string): boolean {
