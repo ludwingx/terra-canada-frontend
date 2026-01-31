@@ -12,10 +12,13 @@ import { UsuariosListComponent } from './pages/usuarios/usuarios-list.component'
 import { AuditoriaListComponent } from './pages/auditoria/auditoria-list.component';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { authRedirectGuard } from './guards/auth-redirect.guard';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { RegisterComponent } from './pages/auth/register/register.component';
+import { AuthRedirectComponent } from './pages/auth/redirect/auth-redirect.component';
 
 export const routes: Routes = [
+  { path: '', component: AuthRedirectComponent, canActivate: [authRedirectGuard] },
   { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
   { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
   {
@@ -23,7 +26,6 @@ export const routes: Routes = [
     component: MainLayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
       { 
         path: 'financieros/tarjetas', 
