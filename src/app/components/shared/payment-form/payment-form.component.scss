@@ -1,0 +1,136 @@
+.payment-form-container {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 0;
+  box-shadow: none;
+  border: none;
+  display: block;
+
+  .payment-form {
+    .form-section {
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+
+      &:last-of-type {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .section-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin: 0 0 16px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 16px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0;
+
+      label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .form-control {
+        padding: 10px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: inherit;
+        background: var(--bg-input);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+
+        &:focus {
+          outline: none;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px var(--primary-lighter);
+        }
+
+        &::placeholder {
+          color: var(--text-muted);
+        }
+      }
+      
+      .notes-textarea {
+        resize: vertical;
+      }
+      
+      &.form-group-full {
+        grid-column: 1 / -1;
+      }
+    }
+    
+    /* Combobox Styles */
+    .combobox-wrapper {
+        position: relative;
+        width: 100%;
+        .combobox-input-container {
+             position: relative;
+             display: flex;
+             align-items: center;
+             .combobox-input { width: 100%; padding-right: 36px; }
+             .combobox-icon { position: absolute; right: 12px; font-size: 14px; color: var(--text-secondary); pointer-events: none; }
+        }
+        .combobox-dropdown {
+             position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-color);
+             z-index: 1000; box-shadow: var(--shadow-lg);
+             max-height: 280px; overflow-y: auto;
+             .combobox-item {
+                 padding: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);
+                 color: var(--text-primary);
+                 &:hover { background: var(--bg-hover); color: var(--primary-color); }
+                 &.combobox-item-add { background: var(--bg-hover); color: var(--primary-color); font-weight: 600; justify-content: flex-start; gap: 8px; }
+             }
+        }
+    }
+
+    .form-actions {
+       display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);
+       .btn { padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; }
+       .btn-primary { background: var(--primary-color); color: white; &:disabled { background: var(--text-muted); cursor: not-allowed; } }
+       .btn-secondary { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); }
+    }
+  }
+
+  /* Datepicker custom styles */
+  .date-input-row {
+      display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      &.is-focused { border-color: var(--primary-color); box-shadow: 0 0 0 1px var(--primary-lighter); }
+      .icon-chip { margin-right: 6px; color: var(--primary-color); }
+      .input-wrapper { flex: 1; .tc-date-input { width: 100%; border: none; outline: none; background: transparent; color: var(--text-primary); } }
+  }
+
+  /* Mini Modal */
+  .mini-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;
+      .mini-modal-content {
+          background: var(--bg-card); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px;
+          h3 { margin-top: 0; color: var(--text-primary); }
+          .mini-modal-body { margin: 20px 0; .form-control { margin-bottom: 10px; width: 100%; } }
+          .mini-modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
+      }
+  }
+}

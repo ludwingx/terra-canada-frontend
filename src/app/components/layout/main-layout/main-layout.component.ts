@@ -1,13 +1,22 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
+import { NotificationComponent, Notification } from '../../shared/notification/notification.component';
+import { NotificationService } from '../../../services/notification.service';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent, HeaderComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    SidebarComponent,
+    HeaderComponent,
+    NotificationComponent
+  ],
   template: `
     <div class="app-layout">
       <app-sidebar />
@@ -18,6 +27,10 @@ import { HeaderComponent } from '../header/header.component';
         <main class="main-content">
           <router-outlet />
         </main>
+        
+        <app-notification 
+          [notifications]="notifications" 
+          (notificationDismissed)="onDismiss($event)" />
       </div>
     </div>
   `,
@@ -25,6 +38,7 @@ import { HeaderComponent } from '../header/header.component';
     .app-layout {
       display: flex;
       min-height: 100vh;
+      background-color: var(--bg-content);
     }
 
     .main-wrapper {
@@ -33,20 +47,39 @@ import { HeaderComponent } from '../header/header.component';
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      transition: margin-left var(--transition-normal);
+      transition: margin-left 0.3s ease;
+      width: calc(100% - var(--sidebar-width));
+      position: relative; /* For notification positioning context if needed */
     }
 
     .main-content {
       flex: 1;
-      padding: var(--spacing-lg);
-      background: var(--bg-content);
+      padding: 24px;
       overflow-y: auto;
-    }
-
-    /* Cuando sidebar está colapsado */
-    :host-context(.sidebar-collapsed) .main-wrapper {
-      margin-left: var(--sidebar-collapsed-width);
+      background: var(--bg-content);
     }
   `]
 })
-export class MainLayoutComponent {}
+export class MainLayoutComponent implements OnInit, OnDestroy {
+  notifications: Notification[] = [];
+  private destroy$ = new Subject<void>();
+  private notificationService = inject(NotificationService);
+
+  ngOnInit(): void {
+    this.notificationService.notification$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(notification => {
+        const id = Date.now().toString();
+        this.notifications.push({ ...notification, id });
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onDismiss(id: string): void {
+    this.notifications = this.notifications.filter(n => n.id !== id);
+  }
+}

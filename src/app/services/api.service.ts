@@ -1,6 +1,7 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -8,10 +9,31 @@ import { environment } from '../../environments/environment';
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = environment.apiUrl;
+  private platformId = inject(PLATFORM_ID);
+  private baseUrl = this.resolveBaseUrl();
+
+  private resolveBaseUrl(): string {
+    if (isPlatformBrowser(this.platformId)) {
+      const w = window as any;
+      const runtimeUrl = w?.__env?.API_BASE_URL;
+      if (typeof runtimeUrl === 'string' && runtimeUrl.trim().length > 0) {
+        return runtimeUrl.replace(/\/+$/, '');
+      }
+    }
+    return String(environment.apiUrl || '').replace(/\/+$/, '');
+  }
+
+  private buildUrl(endpoint: string): string {
+    const cleanEndpoint = String(endpoint || '').replace(/^\//, '');
+    return `${this.baseUrl}/${cleanEndpoint}`;
+  }
 
   private getHeaders(): HttpHeaders {
-    const token = localStorage.getItem('token');
+    let token: string | null = null;
+    if (isPlatformBrowser(this.platformId)) {
+       token = localStorage.getItem('token');
+    }
+    
     let headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
@@ -32,26 +54,26 @@ export class ApiService {
         }
       });
     }
-    return this.http.get<T>(`${this.baseUrl}/${endpoint}`, { 
+    return this.http.get<T>(this.buildUrl(endpoint), { 
       headers: this.getHeaders(),
       params: httpParams
     });
   }
 
   post<T>(endpoint: string, body: any): Observable<T> {
-    return this.http.post<T>(`${this.baseUrl}/${endpoint}`, body, { 
+    return this.http.post<T>(this.buildUrl(endpoint), body, { 
       headers: this.getHeaders() 
     });
   }
 
   put<T>(endpoint: string, body: any): Observable<T> {
-    return this.http.put<T>(`${this.baseUrl}/${endpoint}`, body, { 
+    return this.http.put<T>(this.buildUrl(endpoint), body, { 
       headers: this.getHeaders() 
     });
   }
 
   delete<T>(endpoint: string): Observable<T> {
-    return this.http.delete<T>(`${this.baseUrl}/${endpoint}`, { 
+    return this.http.delete<T>(this.buildUrl(endpoint), { 
       headers: this.getHeaders() 
     });
   }

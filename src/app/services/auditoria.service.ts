@@ -14,4 +14,8 @@ export class AuditoriaService {
       map(res => res.data)
     );
   }
+
+  registrarEvento(evento: Partial<Evento>): Observable<any> {
+    return this.api.post<{success: boolean, data: any}>(`eventos`, evento);
+  }
 }

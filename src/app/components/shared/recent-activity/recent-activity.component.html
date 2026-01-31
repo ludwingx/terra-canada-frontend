@@ -1,0 +1,63 @@
+<div class="recent-activity">
+  <div class="activity-header">
+    <h3>{{ 'dashboard.recent_activity' | translate }}</h3>
+    <button class="refresh-btn">
+      <i class="pi pi-refresh"></i>
+      {{ 'actions.refresh' | translate }}
+    </button>
+  </div>
+
+  <div class="activity-table">
+    <table>
+      <thead>
+        <tr>
+          <th>{{ 'payments.date' | translate }}</th>
+          <th>{{ 'payments.client' | translate }}</th>
+          <th>{{ 'payments.supplier' | translate }}</th>
+          <th>{{ 'payments.amount' | translate }}</th>
+          <th>{{ 'payments.loan_number' | translate }}</th>
+          <th>{{ 'payments.map' | translate }}</th>
+          <th>{{ 'payments.status' | translate }}</th>
+          <th>{{ 'payments.verification' | translate }}</th>
+          <th>{{ 'users.email' | translate }}</th>
+          <th>{{ 'audit.recorded_by' | translate }}</th>
+          <th>{{ 'audit.action' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let activity of activities">
+          <td>{{ activity.date }}</td>
+          <td>{{ activity.client || '-' }}</td> <!-- Client before Supplier -->
+          <td>{{ activity.user }}</td> <!-- Supplier/User -->
+          <td>
+             <span *ngIf="activity.amount">
+              {{ activity.amount }} $ <!-- Format as 100,50 $ -->
+            </span>
+            <span *ngIf="!activity.amount">-</span>
+          </td>
+          <td>-</td> <!-- Needs Loan Number field -->
+          <td>.... .... .... -5425</td> <!-- Mock Map -->
+          <td>
+            <span class="status-badge" [ngClass]="getPaymentStatusClass(activity.paymentStatus)">
+              {{ getPaymentStatusLabel(activity.paymentStatus) }}
+            </span>
+          </td>
+          <td>
+             <span class="verification-badge" [class.verified]="activity.verified">
+                {{ activity.verified ? 'Si' : 'No' }}
+             </span>
+          </td>
+          <td><i class="pi pi-envelope text-red-500"></i></td> <!-- Mock Email Icon -->
+          <td>Susan</td> <!-- Mock Recorded By -->
+          <td>
+            <div class="action-buttons">
+                <button class="btn-icon"><i class="pi pi-eye"></i></button>
+                <button class="btn-icon"><i class="pi pi-pencil"></i></button>
+                <button class="btn-icon"><i class="pi pi-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

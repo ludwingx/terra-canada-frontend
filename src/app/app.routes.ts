@@ -18,6 +18,10 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
+      { 
+        path: 'financieros/tarjetas', 
+        loadComponent: () => import('./features/financieros-tarjetas/financieros-tarjetas.component').then(m => m.FinancierosTarjetasComponent)
+      },
       { path: 'pagos', component: PagosListComponent },
       { path: 'proveedores', component: ProveedoresListComponent },
       { path: 'clientes', component: ClientesListComponent },

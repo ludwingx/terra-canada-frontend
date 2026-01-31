@@ -32,4 +32,17 @@ export class PagosService {
       map(() => undefined)
     );
   }
+
+  scanPagoDocumento(pdfBase64: string, pagoId?: number, numeroPresta?: string): Observable<any> {
+    const payload = { pdfBase64, pagoId, numeroPresta };
+    return this.api.post<{success: boolean, mensaje: string}>(`pagos/scan-documento`, payload);
+  }
+
+  enviarDocumentosRecibiendoPdf(archivos: any[], modulo: string): Observable<any> {
+    return this.api.post<{success: boolean, mensaje: string}>(`pagos/enviar-documentos`, { archivos, modulo });
+  }
+
+  enviarDocumentoBancoPdf(archivo: any, modulo: string): Observable<any> {
+    return this.api.post<{success: boolean, mensaje: string}>(`pagos/enviar-documento-banco`, { archivo, modulo });
+  }
 }

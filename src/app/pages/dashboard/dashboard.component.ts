@@ -1,284 +1,41 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
-import { DashboardKPIs, TopProveedor, Pago, Proveedor, Servicio } from '../../models/interfaces';
+import { DashboardKPIs, Pago, StatCard, Activity } from '../../models/interfaces';
 import { PagoModalComponent } from '../../components/modals/pago-modal/pago-modal.component';
 import { DashboardService } from '../../services/dashboard.service';
 import { PagosService } from '../../services/pagos.service';
-import { AuthService } from '../../services/auth.service';
-import { forkJoin } from 'rxjs';
+import { StatCardComponent } from '../../components/shared/stat-card/stat-card.component';
+import { RecentActivityComponent } from '../../components/shared/recent-activity/recent-activity.component';
+import { TranslatePipe } from '../../pipes/translate.pipe';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, PagoModalComponent],
-  template: `
-    <div class="dashboard">
-      <!-- Page Header -->
-      <div class="page-header">
-        <div>
-          <h1>{{ i18n.t('dashboard.title') }}</h1>
-          <p class="header-subtitle">{{ getCurrentDate() }}</p>
-        </div>
-        <button class="btn btn-primary" (click)="openCreateModal()">
-          <span>➕</span>
-          {{ i18n.t('payments.new') }}
-        </button>
-      </div>
-
-      <!-- KPIs Grid -->
-      <div class="grid grid-4 mb-3">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #fff3cd;">🕐</div>
-          <div class="stat-value">{{ kpis.pagosPendientes }}</div>
-          <div class="stat-title">{{ i18n.t('dashboard.pending_payments') }}</div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #d4edda;">✅</div>
-          <div class="stat-value">{{ kpis.pagosPagados }}</div>
-          <div class="stat-title">{{ i18n.t('dashboard.paid') }}</div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #cce5ff;">🔒</div>
-          <div class="stat-value">{{ kpis.pagosVerificados }}</div>
-          <div class="stat-title">{{ i18n.t('dashboard.verified') }}</div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #f8d7da;">✉️</div>
-          <div class="stat-value">{{ kpis.correosPendientes }}</div>
-          <div class="stat-title">{{ i18n.t('dashboard.pending_emails') }}</div>
-        </div>
-      </div>
-
-      <!-- Charts Row -->
-      <div class="grid grid-2 mb-3">
-        <!-- Payment Methods Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3>{{ i18n.t('dashboard.payment_methods') }}</h3>
-          </div>
-          <div class="chart-placeholder">
-            <div class="payment-methods-chart">
-              <div class="method-bar">
-                <div class="method-label">💳 {{ i18n.language() === 'fr' ? 'Cartes' : 'Tarjetas' }}</div>
-                <div class="method-progress">
-                  <div class="progress-fill cards" [style.width.%]="getCardPercentage()"></div>
-                </div>
-                <div class="method-value">{{ formatCurrency(kpis.montoTarjetas) }}</div>
-              </div>
-              <div class="method-bar">
-                <div class="method-label">🏦 {{ i18n.language() === 'fr' ? 'Comptes' : 'Cuentas' }}</div>
-                <div class="method-progress">
-                  <div class="progress-fill accounts" [style.width.%]="getAccountPercentage()"></div>
-                </div>
-                <div class="method-value">{{ formatCurrency(kpis.montoCuentas) }}</div>
-              </div>
-            </div>
-            <div class="total-section">
-              <span class="total-label">{{ i18n.t('dashboard.monthly_total') }}</span>
-              <span class="total-value">{{ formatCurrency(kpis.montoTotalMes) }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Top Suppliers Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3>{{ i18n.t('dashboard.top_suppliers') }}</h3>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>{{ i18n.t('suppliers.name') }}</th>
-                  <th>{{ i18n.t('suppliers.service') }}</th>
-                  <th class="text-right">{{ i18n.t('payments.amount') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of topProveedores; track item.proveedor.id) {
-                  <tr>
-                    <td>{{ item.proveedor.nombre }}</td>
-                    <td>
-                      <span class="badge badge-paid">{{ item.proveedor.servicio?.nombre }}</span>
-                    </td>
-                    <td class="text-right">
-                      <strong>{{ formatCurrency(item.montoTotal) }}</strong>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Activity -->
-      <div class="card">
-        <div class="card-header">
-          <h3>{{ i18n.t('dashboard.recent_activity') }}</h3>
-          <button class="btn btn-secondary btn-sm">
-            {{ i18n.t('actions.refresh') }}
-          </button>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>{{ i18n.t('payments.code') }}</th>
-                <th>{{ i18n.t('payments.supplier') }}</th>
-                <th>{{ i18n.t('payments.amount') }}</th>
-                <th>{{ i18n.t('payments.method') }}</th>
-                <th>{{ i18n.t('payments.status') }}</th>
-                <th>{{ i18n.t('payments.date') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (pago of recentPagos; track pago.id) {
-                <tr>
-                  <td><strong>{{ pago.codigoReserva }}</strong></td>
-                  <td>{{ pago.proveedor?.nombre }}</td>
-                  <td>{{ formatCurrency(pago.monto, pago.moneda) }}</td>
-                  <td>
-                    <span class="method-icon">
-                      {{ pago.tipoMedioPago === 'TARJETA' ? '💳' : '🏦' }}
-                    </span>
-                  </td>
-                  <td>
-                    @if (pago.verificado) {
-                      <span class="badge badge-verified">{{ i18n.t('status.verified') }}</span>
-                    } @else if (pago.pagado) {
-                      <span class="badge badge-paid">{{ i18n.t('status.paid') }}</span>
-                    } @else {
-                      <span class="badge badge-pending">{{ i18n.t('status.pending') }}</span>
-                    }
-                  </td>
-                  <td class="text-muted">{{ formatDate(pago.fechaCreacion) }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <app-pago-modal
-        [isOpen]="isModalOpen"
-        [pago]="selectedPago"
-        (closed)="closeModal()"
-        (saved)="onPagoSaved($event)"
-      />
-    </div>
-  `,
-  styles: [`
-    .dashboard {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .chart-placeholder {
-      padding: var(--spacing-md);
-    }
-
-    .payment-methods-chart {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-md);
-    }
-
-    .method-bar {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-md);
-    }
-
-    .method-label {
-      width: 100px;
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    .method-progress {
-      flex: 1;
-      height: 24px;
-      background: var(--bg-hover);
-      border-radius: var(--border-radius);
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      border-radius: var(--border-radius);
-      transition: width var(--transition-normal);
-
-      &.cards {
-        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-      }
-
-      &.accounts {
-        background: linear-gradient(90deg, #6b7280, #9ca3af);
-      }
-    }
-
-    .method-value {
-      width: 120px;
-      text-align: right;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .total-section {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: var(--spacing-lg);
-      padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border-color);
-    }
-
-    .total-label {
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    .total-value {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--primary-color);
-    }
-
-    .method-icon {
-      font-size: 18px;
-    }
-  `]
+  imports: [CommonModule, PagoModalComponent, StatCardComponent, RecentActivityComponent, TranslatePipe],
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
   i18n = inject(I18nService);
   private dashboardService = inject(DashboardService);
   private pagosService = inject(PagosService);
-  private authService = inject(AuthService);
 
   // Modal handling
   isModalOpen = false;
   selectedPago?: Pago;
   loading = true;
 
-  // Estados
-  kpis: DashboardKPIs = {
-    pagosPendientes: 0,
-    pagosPagados: 0,
-    pagosVerificados: 0,
-    correosPendientes: 0,
-    correosEnviados: 0,
-    montoTotalMes: 0,
-    montoTarjetas: 0,
-    montoCuentas: 0
-  };
+  // Data for UI
+  stats: StatCard[] = [];
+  activities: Activity[] = [];
 
-  topProveedores: TopProveedor[] = [];
-  recentPagos: Pago[] = [];
+  pagos: Pago[] = [];
+  totalsByCurrency: Array<{ currency: string; total: number; count: number }> = [];
+  paymentMethods: Array<{ id: 'TARJETA' | 'CUENTA_BANCARIA'; label: string; total: number; percent: number }> = [];
+  topSuppliers: Array<{ name: string; count: number; total: number; currency: string }> = [];
 
   ngOnInit(): void {
     this.reloadDashboard();
@@ -287,26 +44,167 @@ export class DashboardComponent implements OnInit {
   reloadDashboard(): void {
     this.loading = true;
     
-    // Cargamos KPIs y Pagos recientes en paralelo
     forkJoin({
-      kpis: this.dashboardService.getKPIs(),
-      pagos: this.pagosService.getPagos({ limit: 5 })
+      kpis: this.dashboardService.getKPIs().pipe(
+        catchError(() => of(undefined))
+      ),
+      pagos: this.pagosService.getPagos({ limit: 10 })
+        .pipe(catchError(() => of([] as Pago[])))
     }).subscribe({
       next: (res) => {
-        this.kpis = res.kpis;
-        this.recentPagos = res.pagos;
+        this.pagos = res.pagos;
+
+        const computedKpis = res.kpis ?? this.computeKpisFromPagos(res.pagos);
+        this.mapStats(computedKpis);
+        this.mapActivities(res.pagos);
+
+        this.computeTotalsByCurrency(res.pagos);
+        this.computePaymentMethods(res.pagos, computedKpis);
+        this.computeTopSuppliers(res.pagos);
         this.loading = false;
-        
-        // El endpoint de top proveedores no parece estar documentado explícitamente 
-        // como una función separada en DOCUMENTACION_ENDPOINTS.md, 
-        // pero podemos obtenerlo del dashboard si el backend lo incluyera.
-        // Por ahora, si no está en el objeto data del dashboard, lo dejamos vacío.
       },
       error: (err) => {
         console.error('Error cargando dashboard:', err);
+        this.pagos = [];
+        const computedKpis = this.computeKpisFromPagos([]);
+        this.mapStats(computedKpis);
+        this.mapActivities([]);
+        this.computeTotalsByCurrency([]);
+        this.computePaymentMethods([], computedKpis);
+        this.computeTopSuppliers([]);
         this.loading = false;
       }
     });
+  }
+
+  private mapStats(kpis: DashboardKPIs): void {
+    this.stats = [
+      {
+        id: 'pagos-pendientes',
+        title: 'Pagos Pendientes',
+        value: kpis.pagosPendientes,
+        icon: 'pi pi-clock',
+        color: '#ff9800',
+        unit: ''
+      },
+      {
+        id: 'pagos-estado-pagado',
+        title: 'Pagos Completados',
+        value: kpis.pagosPagados,
+        icon: 'pi pi-check-circle',
+        color: '#4caf50',
+        unit: ''
+      },
+      {
+        id: 'pagos-verificados',
+        title: 'Verificados',
+        value: kpis.pagosVerificados,
+        icon: 'pi pi-verified',
+        color: '#2196f3',
+        unit: ''
+      },
+      {
+        id: 'emails-espera-envio',
+        title: 'Correos Pendientes',
+        value: kpis.correosPendientes,
+        icon: 'pi pi-envelope',
+        color: '#9c27b0',
+        unit: ''
+      }
+    ];
+  }
+
+  private mapActivities(pagos: Pago[]): void {
+    this.activities = pagos.map(p => ({
+      id: p.id.toString(),
+      date: this.formatDate(p.fechaCreacion),
+      time: new Date(p.fechaCreacion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      user: p.proveedor?.nombre || 'Proveedor',
+      client: p.clientes?.[0]?.cliente?.nombre,
+      action: 'Pago registrado',
+      amount: p.monto,
+      currency: p.moneda,
+      paymentStatus: p.pagado ? 'PAGADO' : 'POR_PAGAR',
+      verified: p.verificado,
+      status: p.verificado ? 'completado' : 'sin-verificacion'
+    }));
+  }
+
+  private computeKpisFromPagos(pagos: Pago[]): DashboardKPIs {
+    const pagosPendientes = pagos.filter(p => !p.pagado).length;
+    const pagosPagados = pagos.filter(p => !!p.pagado).length;
+    const pagosVerificados = pagos.filter(p => !!p.verificado).length;
+
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const pagosMes = pagos.filter(p => {
+      const d = new Date(p.fechaCreacion);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const montoTotalMes = pagosMes.reduce((acc, p) => acc + (p.monto || 0), 0);
+    const montoTarjetas = pagosMes
+      .filter(p => p.tipoMedioPago === 'TARJETA')
+      .reduce((acc, p) => acc + (p.monto || 0), 0);
+    const montoCuentas = pagosMes
+      .filter(p => p.tipoMedioPago === 'CUENTA_BANCARIA')
+      .reduce((acc, p) => acc + (p.monto || 0), 0);
+
+    return {
+      pagosPendientes,
+      pagosPagados,
+      pagosVerificados,
+      correosPendientes: 0,
+      correosEnviados: 0,
+      montoTotalMes,
+      montoTarjetas,
+      montoCuentas
+    };
+  }
+
+  private computeTotalsByCurrency(pagos: Pago[]): void {
+    const map = new Map<string, { total: number; count: number }>();
+    for (const p of pagos) {
+      const c = p.moneda || 'N/A';
+      const prev = map.get(c) ?? { total: 0, count: 0 };
+      map.set(c, { total: prev.total + (p.monto || 0), count: prev.count + 1 });
+    }
+    this.totalsByCurrency = Array.from(map.entries())
+      .map(([currency, v]) => ({ currency, total: v.total, count: v.count }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  private computePaymentMethods(pagos: Pago[], kpis: DashboardKPIs): void {
+    const total = Math.max(0, (kpis.montoTarjetas || 0) + (kpis.montoCuentas || 0));
+    const percent = (value: number) => {
+      if (!total) return 0;
+      return Math.round((value / total) * 100);
+    };
+
+    const labelCard = this.i18n.language() === 'fr' ? 'Cartes' : 'Tarjetas';
+    const labelAccount = this.i18n.language() === 'fr' ? 'Comptes' : 'Cuentas';
+
+    this.paymentMethods = [
+      { id: 'TARJETA', label: labelCard, total: kpis.montoTarjetas || 0, percent: percent(kpis.montoTarjetas || 0) },
+      { id: 'CUENTA_BANCARIA', label: labelAccount, total: kpis.montoCuentas || 0, percent: percent(kpis.montoCuentas || 0) }
+    ];
+  }
+
+  private computeTopSuppliers(pagos: Pago[]): void {
+    const map = new Map<string, { name: string; count: number; total: number; currency: string }>();
+    for (const p of pagos) {
+      const name = p.proveedor?.nombre || 'Proveedor';
+      const key = `${name}__${p.moneda || 'N/A'}`;
+      const prev = map.get(key) ?? { name, count: 0, total: 0, currency: p.moneda || 'N/A' };
+      map.set(key, {
+        ...prev,
+        count: prev.count + 1,
+        total: prev.total + (p.monto || 0)
+      });
+    }
+    this.topSuppliers = Array.from(map.values())
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
   }
 
   openCreateModal(): void {
@@ -334,24 +232,7 @@ export class DashboardComponent implements OnInit {
     return new Date().toLocaleDateString(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES', options);
   }
 
-  formatCurrency(amount: number, currency: string = 'CAD'): string {
-    return new Intl.NumberFormat(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
-  }
-
-  formatDate(date: Date): string {
+  private formatDate(date: Date | string): string {
     return new Date(date).toLocaleDateString(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES');
-  }
-
-  getCardPercentage(): number {
-    const total = this.kpis.montoTarjetas + this.kpis.montoCuentas;
-    return total > 0 ? (this.kpis.montoTarjetas / total) * 100 : 0;
-  }
-
-  getAccountPercentage(): number {
-    const total = this.kpis.montoTarjetas + this.kpis.montoCuentas;
-    return total > 0 ? (this.kpis.montoCuentas / total) * 100 : 0;
   }
 }

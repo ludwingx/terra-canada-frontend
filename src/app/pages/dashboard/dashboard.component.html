@@ -1,0 +1,112 @@
+<div class="dashboard-layout">
+  <div class="dashboard-content">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <h1>{{ 'dashboard.title' | translate }}</h1>
+        <p class="header-subtitle">{{ getCurrentDate() }}</p>
+      </div>
+      <div class="header-right">
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <span class="icon">➕</span> {{ 'payments.new' | translate }}
+        </button>
+      </div>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <app-stat-card *ngFor="let stat of stats" [stat]="stat"></app-stat-card>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="recent-activity-wrapper">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>{{ i18n.language() === 'fr' ? 'Répartition par moyen de paiement' : 'Distribución por medio de pago' }}</h3>
+          </div>
+          <div class="payment-methods-chart">
+            <div class="method-bar" *ngFor="let m of paymentMethods">
+              <div class="method-label">{{ m.label }}</div>
+              <div class="method-progress">
+                <div
+                  class="progress-fill"
+                  [ngClass]="m.id === 'TARJETA' ? 'cards' : 'accounts'"
+                  [style.width.%]="m.percent"
+                ></div>
+              </div>
+              <div class="method-value">
+                {{ m.percent }}%
+              </div>
+            </div>
+            <div class="total-section">
+              <div>{{ i18n.language() === 'fr' ? 'Total (mois en cours)' : 'Total (mes actual)' }}</div>
+              <div class="method-value">
+                {{ (paymentMethods[0]?.total || 0) + (paymentMethods[1]?.total || 0) | number:'1.0-2' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>{{ i18n.language() === 'fr' ? 'Totaux par devise' : 'Totales por moneda' }}</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ i18n.language() === 'fr' ? 'Devise' : 'Moneda' }}</th>
+                  <th class="text-right">{{ i18n.language() === 'fr' ? 'Paiements' : 'Pagos' }}</th>
+                  <th class="text-right">{{ i18n.language() === 'fr' ? 'Total' : 'Total' }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of totalsByCurrency">
+                  <td>{{ row.currency }}</td>
+                  <td class="text-right">{{ row.count }}</td>
+                  <td class="text-right">{{ row.total | number:'1.0-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>{{ i18n.language() === 'fr' ? 'Top fournisseurs' : 'Top proveedores' }}</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ i18n.language() === 'fr' ? 'Fournisseur' : 'Proveedor' }}</th>
+                  <th class="text-right">{{ i18n.language() === 'fr' ? 'Paiements' : 'Pagos' }}</th>
+                  <th class="text-right">{{ i18n.language() === 'fr' ? 'Total' : 'Total' }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let s of topSuppliers">
+                  <td>{{ s.name }}</td>
+                  <td class="text-right">{{ s.count }}</td>
+                  <td class="text-right">{{ s.total | number:'1.0-2' }} {{ s.currency }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <app-recent-activity [activities]="activities"></app-recent-activity>
+    </div>
+  </div>
+</div>
+
+<app-pago-modal
+  *ngIf="isModalOpen"
+  [pago]="selectedPago"
+  (saved)="onPagoSaved($event)"
+  (closed)="closeModal()"
+/>

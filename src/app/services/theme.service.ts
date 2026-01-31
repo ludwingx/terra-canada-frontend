@@ -12,6 +12,7 @@ export class ThemeService {
   
   theme = computed(() => this.currentTheme());
   isDark = computed(() => this.currentTheme() === 'dark');
+  isFullscreen = signal<boolean>(false);
 
   constructor() {
     this.loadTheme();
@@ -20,6 +21,27 @@ export class ThemeService {
     effect(() => {
       this.applyTheme(this.currentTheme());
     });
+    
+    // Escuchar cambios de fullscreen
+    if (isPlatformBrowser(this.platformId)) {
+        document.addEventListener('fullscreenchange', () => {
+            this.isFullscreen.set(!!document.fullscreenElement);
+        });
+    }
+  }
+
+  toggleFullscreen(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
   }
 
   private loadTheme(): void {

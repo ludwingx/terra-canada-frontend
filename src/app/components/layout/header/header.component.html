@@ -1,0 +1,57 @@
+<header class="top-header" (click)="closeMenus()">
+  <div class="header-spacer"></div>
+
+  <!-- Search (Optional placeholders) -->
+  <!-- <div class="header-search">
+    <i class="pi pi-search"></i>
+    <input type="text" class="search-input" [placeholder]="'header.search' | translate" />
+  </div> -->
+
+  <!-- Right Actions -->
+  <div class="header-actions">
+    <!-- Fullscreen Toggle -->
+    <button
+      class="action-btn"
+      (click)="toggleFullscreen()"
+      [title]="isFullscreen() ? 'Salir pantalla completa' : 'Pantalla completa'">
+      <i [class]="isFullscreen() ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"></i>
+    </button>
+
+    <!-- Language Selector -->
+    <div class="action-item language-container" (click)="$event.stopPropagation()">
+      <button
+        class="action-btn"
+        (click)="toggleLanguageMenu()"
+        [title]="'language' | translate">
+        <i class="pi pi-globe"></i>
+        <span class="language-code">{{ language().toUpperCase() }}</span>
+      </button>
+
+      <!-- Language Dropdown -->
+      <div class="language-dropdown" *ngIf="showLanguageMenu">
+        <button
+          class="language-option"
+          [class.active]="language() === 'es'"
+          (click)="selectLanguage('es')">
+          <i class="pi pi-check" *ngIf="language() === 'es'"></i>
+          {{ 'Español' }}
+        </button>
+        <button
+          class="language-option"
+          [class.active]="language() === 'fr'"
+          (click)="selectLanguage('fr')">
+          <i class="pi pi-check" *ngIf="language() === 'fr'"></i>
+          {{ 'Français' }}
+        </button>
+      </div>
+    </div>
+    
+    <!-- Theme Toggle -->
+    <button 
+       class="action-btn" 
+       (click)="themeService.toggleTheme()"
+       [title]="'header.theme' | translate">
+       <i [class]="themeService.isDark() ? 'pi pi-sun' : 'pi pi-moon'"></i>
+    </button>
+  </div>
+</header>
