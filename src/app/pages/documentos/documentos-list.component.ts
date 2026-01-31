@@ -120,7 +120,7 @@ import { ModalComponent } from '../../components/shared/modal/modal.component';
             <div class="document-preview-placeholder">
               <span class="icon">📄</span>
               <p>{{ i18n.t('documents.preview_placeholder') }}</p>
-              <a [href]="selectedDocumento.url" target="_blank" class="btn btn-primary">
+              <a [href]="selectedDocumento.urlDocumento" target="_blank" class="btn btn-primary">
                 {{ i18n.t('actions.open_full') }}
               </a>
             </div>
