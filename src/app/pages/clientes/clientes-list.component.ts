@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
@@ -16,7 +16,7 @@ import { ClientesService } from '../../services/clientes.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('clients.title') }}</h1>
-          <p class="header-subtitle">{{ clientes.length }} {{ i18n.t('clients.count') }}</p>
+          <p class="header-subtitle">{{ clientes().length }} {{ i18n.t('clients.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -38,7 +38,14 @@ import { ClientesService } from '../../services/clientes.service';
       </div>
 
       <!-- Clients Table -->
-      <div class="card">
+      <div class="card relative">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
+          </div>
+        }
+
         <div class="table-container">
           <table>
             <thead>
@@ -52,7 +59,7 @@ import { ClientesService } from '../../services/clientes.service';
               </tr>
             </thead>
             <tbody>
-              @for (cliente of filteredClientes; track cliente.id) {
+              @for (cliente of filteredClientes(); track cliente.id) {
                 <tr>
                   <td>
                     <div class="client-name">
@@ -84,11 +91,13 @@ import { ClientesService } from '../../services/clientes.service';
                   </td>
                 </tr>
               } @empty {
-                <tr>
-                  <td colspan="6" class="text-center text-muted">
-                    {{ i18n.t('msg.no_data') }}
-                  </td>
-                </tr>
+                @if (!loading()) {
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">
+                      {{ i18n.t('msg.no_data') }}
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
@@ -104,6 +113,35 @@ import { ClientesService } from '../../services/clientes.service';
     </div>
   `,
   styles: [`
+    .clientes-page {
+      position: relative;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .filters-row {
       display: flex;
       gap: var(--spacing-md);
@@ -128,29 +166,29 @@ import { ClientesService } from '../../services/clientes.service';
 export class ClientesListComponent implements OnInit {
   i18n = inject(I18nService);
   private clientesService = inject(ClientesService);
-  searchQuery = '';
-  loading = false;
+  
+  searchQuery = signal('');
+  loading = signal(false);
+  clientes = signal<Cliente[]>([]);
 
   // Modal handling
   isModalOpen = false;
   selectedCliente?: Cliente;
-
-  clientes: Cliente[] = [];
 
   ngOnInit(): void {
     this.loadClientes();
   }
 
   loadClientes(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.clientesService.getClientes().subscribe({
-      next: (clientes) => {
-        this.clientes = clientes;
-        this.loading = false;
+      next: (data) => {
+        this.clientes.set(data);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando clientes:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
@@ -175,11 +213,13 @@ export class ClientesListComponent implements OnInit {
     this.closeModal();
   }
 
-  get filteredClientes(): Cliente[] {
-    if (!this.searchQuery) return this.clientes;
-    return this.clientes.filter(c => 
-      c.nombre.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-      c.ubicacion?.toLowerCase().includes(this.searchQuery.toLowerCase())
+  filteredClientes = computed(() => {
+    const list = this.clientes();
+    const query = this.searchQuery().toLowerCase();
+    if (!query) return list;
+    return list.filter(c => 
+      c.nombre.toLowerCase().includes(query) ||
+      c.ubicacion?.toLowerCase().includes(query)
     );
-  }
+  });
 }

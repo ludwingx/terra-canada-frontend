@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { TarjetaCredito } from '../../models/interfaces';
@@ -15,7 +15,7 @@ import { TarjetasService } from '../../services/tarjetas.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('cards.title') }}</h1>
-          <p class="header-subtitle">{{ tarjetas.length }} {{ i18n.t('cards.count') }}</p>
+          <p class="header-subtitle">{{ tarjetas().length }} {{ i18n.t('cards.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -24,56 +24,71 @@ import { TarjetasService } from '../../services/tarjetas.service';
       </div>
 
       <!-- Cards Grid -->
-      <div class="cards-grid">
-        @for (tarjeta of tarjetas; track tarjeta.id) {
-          <div class="credit-card" [class.inactive]="!tarjeta.activo">
-            <div class="card-header">
-              <div class="card-type">
-                <span class="card-icon">💳</span>
-                <span>{{ tarjeta.tipoTarjeta || 'Visa' }}</span>
-              </div>
-              <div class="card-currency">{{ tarjeta.moneda }}</div>
-            </div>
-
-            <div class="card-number">
-              **** **** **** {{ tarjeta.ultimos4Digitos }}
-            </div>
-
-            <div class="card-holder">
-              {{ tarjeta.nombreTitular }}
-            </div>
-
-            <div class="card-balance">
-              <div class="balance-info">
-                <span class="balance-label">{{ i18n.t('cards.available') }}</span>
-                <span class="balance-value" [class.low]="getUsagePercentage(tarjeta) > 80">
-                  {{ formatCurrency(tarjeta.saldoDisponible, tarjeta.moneda) }}
-                </span>
-              </div>
-              <div class="balance-bar">
-                <div 
-                  class="balance-fill" 
-                  [style.width.%]="100 - getUsagePercentage(tarjeta)"
-                  [class.low]="getUsagePercentage(tarjeta) > 80"
-                ></div>
-              </div>
-              <div class="balance-limit">
-                {{ i18n.t('cards.limit') }}: {{ formatCurrency(tarjeta.limiteMensual, tarjeta.moneda) }}
-              </div>
-            </div>
-
-            <div class="card-actions">
-              <button class="btn btn-secondary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.view') }}</button>
-              <button class="btn btn-primary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.edit') }}</button>
-            </div>
-
-            @if (!tarjeta.activo) {
-              <div class="inactive-overlay">
-                <span>{{ i18n.t('status.inactive') }}</span>
-              </div>
-            }
+      <div class="cards-container relative">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
           </div>
         }
+
+        <div class="cards-grid">
+          @for (tarjeta of tarjetas(); track tarjeta.id) {
+            <div class="credit-card" [class.inactive]="!tarjeta.activo">
+              <div class="card-header">
+                <div class="card-type">
+                  <span class="card-icon">💳</span>
+                  <span>{{ tarjeta.tipoTarjeta || 'Visa' }}</span>
+                </div>
+                <div class="card-currency">{{ tarjeta.moneda }}</div>
+              </div>
+
+              <div class="card-number">
+                **** **** **** {{ tarjeta.ultimos4Digitos }}
+              </div>
+
+              <div class="card-holder">
+                {{ tarjeta.nombreTitular }}
+              </div>
+
+              <div class="card-balance">
+                <div class="balance-info">
+                  <span class="balance-label">{{ i18n.t('cards.available') }}</span>
+                  <span class="balance-value" [class.low]="getUsagePercentage(tarjeta) > 80">
+                    {{ formatCurrency(tarjeta.saldoDisponible, tarjeta.moneda) }}
+                  </span>
+                </div>
+                <div class="balance-bar">
+                  <div 
+                    class="balance-fill" 
+                    [style.width.%]="100 - getUsagePercentage(tarjeta)"
+                    [class.low]="getUsagePercentage(tarjeta) > 80"
+                  ></div>
+                </div>
+                <div class="balance-limit">
+                  {{ i18n.t('cards.limit') }}: {{ formatCurrency(tarjeta.limiteMensual, tarjeta.moneda) }}
+                </div>
+              </div>
+
+              <div class="card-actions">
+                <button class="btn btn-secondary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.view') }}</button>
+                <button class="btn btn-primary btn-sm" (click)="openEditModal(tarjeta)">{{ i18n.t('actions.edit') }}</button>
+              </div>
+
+              @if (!tarjeta.activo) {
+                <div class="inactive-overlay">
+                  <span>{{ i18n.t('status.inactive') }}</span>
+                </div>
+              }
+            </div>
+          } @empty {
+            @if (!loading()) {
+               <div class="no-data card">
+                <p class="text-muted text-center">{{ i18n.t('msg.no_data') }}</p>
+              </div>
+            }
+          }
+        </div>
       </div>
 
       <app-tarjeta-modal
@@ -85,6 +100,39 @@ import { TarjetasService } from '../../services/tarjetas.service';
     </div>
   `,
   styles: [`
+    .tarjetas-page {
+      position: relative;
+    }
+    .cards-container {
+      position: relative;
+      min-height: 200px;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -250,34 +298,37 @@ import { TarjetasService } from '../../services/tarjetas.service';
       font-weight: 600;
       text-transform: uppercase;
     }
+    .no-data {
+      grid-column: 1 / -1;
+      padding: var(--spacing-xl);
+    }
   `]
 })
 export class TarjetasListComponent implements OnInit {
   i18n = inject(I18nService);
   private tarjetasService = inject(TarjetasService);
   
-  loading = false;
+  loading = signal(false);
+  tarjetas = signal<TarjetaCredito[]>([]);
 
   // Modal handling
   isModalOpen = false;
   selectedTarjeta?: TarjetaCredito;
-
-  tarjetas: TarjetaCredito[] = [];
 
   ngOnInit(): void {
     this.loadTarjetas();
   }
 
   loadTarjetas(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.tarjetasService.getTarjetas().subscribe({
-      next: (tarjetas) => {
-        this.tarjetas = tarjetas;
-        this.loading = false;
+      next: (data) => {
+        this.tarjetas.set(data);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando tarjetas:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
@@ -15,7 +15,7 @@ import { AuditoriaService } from '../../services/auditoria.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('audit.title') }}</h1>
-          <p class="header-subtitle">{{ eventos.length }} {{ i18n.t('audit.entity') }}</p>
+          <p class="header-subtitle">{{ eventos().length }} {{ i18n.t('audit.entity') }}</p>
         </div>
         <button class="btn btn-secondary">
           <span>📥</span>
@@ -26,7 +26,7 @@ import { AuditoriaService } from '../../services/auditoria.service';
       <!-- Filters -->
       <div class="card mb-3">
         <div class="filters-row">
-          <select class="form-control" [(ngModel)]="filterType" style="max-width: 200px;">
+          <select class="form-control" [(ngModel)]="filterType" (ngModelChange)="onFilterChange()" style="max-width: 200px;">
             <option value="">{{ i18n.t('audit.all_types') }}</option>
             <option value="INICIO_SESION">{{ i18n.t('audit.type_login') }}</option>
             <option value="CREAR">{{ i18n.t('audit.type_create') }}</option>
@@ -35,11 +35,18 @@ import { AuditoriaService } from '../../services/auditoria.service';
             <option value="VERIFICAR_PAGO">{{ i18n.t('audit.type_verify') }}</option>
             <option value="ENVIAR_CORREO">{{ i18n.t('audit.type_email') }}</option>
           </select>
-          <input type="date" class="form-control" [(ngModel)]="filterDate" style="max-width: 180px;">
+          <input type="date" class="form-control" [(ngModel)]="filterDate" (ngModelChange)="onFilterChange()" style="max-width: 180px;">
         </div>
       </div>
 
-      <div class="card">
+      <div class="card relative">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
+          </div>
+        }
+
         <div class="table-container">
           <table>
             <thead>
@@ -54,7 +61,7 @@ import { AuditoriaService } from '../../services/auditoria.service';
               </tr>
             </thead>
             <tbody>
-              @for (evento of filteredEventos; track evento.id) {
+              @for (evento of filteredEventos(); track evento.id) {
                 <tr>
                   <td class="text-muted">{{ formatDateTime(evento.fechaEvento) }}</td>
                   <td>{{ evento.usuario?.nombreCompleto || 'Sistema' }}</td>
@@ -72,6 +79,12 @@ import { AuditoriaService } from '../../services/auditoria.service';
                     </button>
                   </td>
                 </tr>
+              } @empty {
+                @if (!loading()) {
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">{{ i18n.t('msg.no_data') }}</td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
@@ -117,6 +130,35 @@ import { AuditoriaService } from '../../services/auditoria.service';
     </div>
   `,
   styles: [`
+    .auditoria-page {
+      position: relative;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .filters-row {
       display: flex;
       gap: var(--spacing-md);
@@ -178,34 +220,46 @@ export class AuditoriaListComponent implements OnInit {
   
   filterType = '';
   filterDate = '';
-  loading = false;
+  
+  loading = signal(false);
+  eventos = signal<Evento[]>([]);
 
   isModalOpen = false;
   selectedEvento?: Evento;
-
-  eventos: Evento[] = [];
 
   ngOnInit(): void {
     this.loadEventos();
   }
 
   loadEventos(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.auditoriaService.getEventos().subscribe({
-      next: (eventos) => {
-        this.eventos = eventos;
-        this.loading = false;
+      next: (data) => {
+        this.eventos.set(data);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando auditoría:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
 
-  get filteredEventos(): Evento[] {
-    return this.eventos.filter(e => !this.filterType || e.tipoEvento === this.filterType);
+  onFilterChange(): void {
+    // Triggers computed re-evaluation through dependency tracking
   }
+
+  filteredEventos = computed(() => {
+    const list = this.eventos();
+    const type = this.filterType;
+    const date = this.filterDate;
+    
+    return list.filter(e => {
+      const matchesType = !type || e.tipoEvento === type;
+      const matchesDate = !date || new Date(e.fechaEvento).toISOString().split('T')[0] === date;
+      return matchesType && matchesDate;
+    });
+  });
 
   openViewModal(evento: Evento): void {
     this.selectedEvento = evento;

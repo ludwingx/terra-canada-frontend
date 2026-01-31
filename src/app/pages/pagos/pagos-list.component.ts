@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
@@ -16,7 +16,7 @@ import { PagosService } from '../../services/pagos.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('payments.title') }}</h1>
-          <p class="header-subtitle">{{ pagos.length }} {{ i18n.t('payments.count') }}</p>
+          <p class="header-subtitle">{{ pagos().length }} {{ i18n.t('payments.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -50,14 +50,21 @@ import { PagosService } from '../../services/pagos.service';
               <option value="CUENTA_BANCARIA">{{ i18n.t('filter.accounts') }}</option>
             </select>
           </div>
-          <button class="btn btn-secondary">
-            {{ i18n.t('actions.filter') }}
+          <button class="btn btn-secondary" (click)="loadPagos()">
+            {{ i18n.t('actions.refresh') }}
           </button>
         </div>
       </div>
 
       <!-- Payments Table -->
       <div class="card">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
+          </div>
+        }
+
         <div class="table-container">
           <table>
             <thead>
@@ -75,7 +82,7 @@ import { PagosService } from '../../services/pagos.service';
               </tr>
             </thead>
             <tbody>
-              @for (pago of filteredPagos; track pago.id) {
+              @for (pago of filteredPagos(); track pago.id) {
                 <tr>
                   <td><strong class="text-primary">{{ pago.codigoReserva }}</strong></td>
                   <td>{{ pago.proveedor?.nombre }}</td>
@@ -117,16 +124,18 @@ import { PagosService } from '../../services/pagos.service';
                     <div class="actions-cell">
                       <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openEditModal(pago)">👁️</button>
                       <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.edit') }}" [disabled]="pago.verificado" (click)="openEditModal(pago)">✏️</button>
-                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.delete') }}" [disabled]="pago.gmailEnviado">🗑️</button>
+                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.delete') }}" (click)="deletePago(pago.id)" [disabled]="pago.gmailEnviado">🗑️</button>
                     </div>
                   </td>
                 </tr>
               } @empty {
-                <tr>
-                  <td colspan="10" class="text-center text-muted">
-                    {{ i18n.t('msg.no_data') }}
-                  </td>
-                </tr>
+                @if (!loading()) {
+                  <tr>
+                    <td colspan="10" class="text-center text-muted">
+                      {{ i18n.t('msg.no_data') }}
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
@@ -142,6 +151,35 @@ import { PagosService } from '../../services/pagos.service';
     </div>
   `,
   styles: [`
+    .pagos-page {
+      position: relative;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .filters-row {
       display: flex;
       gap: var(--spacing-md);
@@ -198,31 +236,31 @@ export class PagosListComponent implements OnInit {
   searchQuery = '';
   filterStatus = '';
   filterMethod = '';
-  loading = false;
+  
+  loading = signal(false);
+  pagos = signal<Pago[]>([]);
 
   // Modal handling
   isModalOpen = false;
   selectedPago?: Pago;
-
-  pagos: Pago[] = [];
 
   ngOnInit(): void {
     this.loadPagos();
   }
 
   loadPagos(): void {
-    this.loading = true;
+    this.loading.set(true);
     const filters: any = {};
     if (this.filterStatus) filters.estado = this.filterStatus.toUpperCase();
     
     this.pagosService.getPagos(filters).subscribe({
-      next: (pagos) => {
-        this.pagos = pagos;
-        this.loading = false;
+      next: (data) => {
+        this.pagos.set(data);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando pagos:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
@@ -256,22 +294,26 @@ export class PagosListComponent implements OnInit {
     }
   }
 
-  get filteredPagos(): Pago[] {
-    return this.pagos.filter(p => {
-      const matchesSearch = !this.searchQuery || 
-        p.codigoReserva.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        p.proveedor?.nombre.toLowerCase().includes(this.searchQuery.toLowerCase());
+  filteredPagos = computed(() => {
+    const query = this.searchQuery.toLowerCase();
+    const status = this.filterStatus;
+    const method = this.filterMethod;
+    
+    return this.pagos().filter(p => {
+      const matchesSearch = !query || 
+        p.codigoReserva.toLowerCase().includes(query) ||
+        p.proveedor?.nombre.toLowerCase().includes(query);
       
-      const matchesStatus = !this.filterStatus ||
-        (this.filterStatus === 'pending' && !p.pagado) ||
-        (this.filterStatus === 'paid' && p.pagado && !p.verificado) ||
-        (this.filterStatus === 'verified' && p.verificado);
+      const matchesStatus = !status ||
+        (status === 'pending' && !p.pagado) ||
+        (status === 'paid' && p.pagado && !p.verificado) ||
+        (status === 'verified' && p.verificado);
       
-      const matchesMethod = !this.filterMethod || p.tipoMedioPago === this.filterMethod;
+      const matchesMethod = !method || p.tipoMedioPago === method;
       
       return matchesSearch && matchesStatus && matchesMethod;
     });
-  }
+  });
 
   formatCurrency(amount: number, currency: string = 'CAD'): string {
     return new Intl.NumberFormat(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES', {
@@ -288,6 +330,6 @@ export class PagosListComponent implements OnInit {
     if (pago.clientes && pago.clientes.length > 0) {
       return pago.clientes.map(c => c.cliente?.nombre).join(', ');
     }
-    return 'Hôtel Example';
+    return '';
   }
 }

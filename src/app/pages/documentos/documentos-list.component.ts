@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { Documento } from '../../models/interfaces';
@@ -15,7 +15,7 @@ import { ModalComponent } from '../../components/shared/modal/modal.component';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('documents.title') }}</h1>
-          <p class="header-subtitle">{{ documentos.length }} {{ i18n.t('documents.count') }}</p>
+          <p class="header-subtitle">{{ documentos().length }} {{ i18n.t('documents.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openUploadModal()">
           <span>📤</span>
@@ -23,7 +23,14 @@ import { ModalComponent } from '../../components/shared/modal/modal.component';
         </button>
       </div>
 
-      <div class="card">
+      <div class="card relative">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
+          </div>
+        }
+
         <div class="table-container">
           <table>
             <thead>
@@ -37,7 +44,7 @@ import { ModalComponent } from '../../components/shared/modal/modal.component';
               </tr>
             </thead>
             <tbody>
-              @for (doc of documentos; track doc.id) {
+              @for (doc of documentos(); track doc.id) {
                 <tr>
                   <td>
                     <div class="file-name">
@@ -65,6 +72,14 @@ import { ModalComponent } from '../../components/shared/modal/modal.component';
                     <button class="btn btn-secondary btn-sm" (click)="openViewModal(doc)">👁️ {{ i18n.t('actions.view') }}</button>
                   </td>
                 </tr>
+              } @empty {
+                @if (!loading()) {
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">
+                      {{ i18n.t('msg.no_data') }}
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
@@ -130,6 +145,35 @@ import { ModalComponent } from '../../components/shared/modal/modal.component';
     </div>
   `,
   styles: [`
+    .documentos-page {
+      position: relative;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .file-name {
       display: flex;
       align-items: center;
@@ -183,23 +227,24 @@ export class DocumentosListComponent implements OnInit {
   isUploadModalOpen = false;
   isViewModalOpen = false;
   selectedDocumento?: Documento;
-  loading = false;
-  documentos: Documento[] = [];
+  
+  loading = signal(false);
+  documentos = signal<Documento[]>([]);
 
   ngOnInit(): void {
     this.loadDocumentos();
   }
 
   loadDocumentos(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.documentosService.getDocumentos().subscribe({
-      next: (docs) => {
-        this.documentos = docs;
-        this.loading = false;
+      next: (data) => {
+        this.documentos.set(data);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando documentos:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }

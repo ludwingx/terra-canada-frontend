@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../services/i18n.service';
@@ -16,7 +16,7 @@ import { ProveedoresService } from '../../services/proveedores.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('suppliers.title') }}</h1>
-          <p class="header-subtitle">{{ proveedores.length }} {{ i18n.t('suppliers.count') }}</p>
+          <p class="header-subtitle">{{ proveedores().length }} {{ i18n.t('suppliers.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -49,64 +49,75 @@ import { ProveedoresService } from '../../services/proveedores.service';
       </div>
 
       <!-- Suppliers Grid -->
-      <div class="suppliers-grid">
-        @for (proveedor of filteredProveedores; track proveedor.id) {
-          <div class="supplier-card card">
-            <div class="supplier-header">
-              <div class="supplier-avatar">
-                {{ getInitials(proveedor.nombre) }}
-              </div>
-              <div class="supplier-info">
-                <h3>{{ proveedor.nombre }}</h3>
-                <span class="badge badge-paid">{{ proveedor.servicio?.nombre }}</span>
-              </div>
-              <div class="supplier-status" [class.active]="proveedor.activo">
-                {{ proveedor.activo ? '●' : '○' }}
-              </div>
-            </div>
-            
-            <div class="supplier-details">
-              @if (proveedor.lenguaje) {
-                <div class="detail-row">
-                  <span class="detail-label">🌐 {{ i18n.t('suppliers.language') }}</span>
-                  <span class="detail-value">{{ proveedor.lenguaje }}</span>
-                </div>
-              }
-              @if (proveedor.telefono) {
-                <div class="detail-row">
-                  <span class="detail-label">📞 {{ i18n.t('suppliers.phone') }}</span>
-                  <span class="detail-value">{{ proveedor.telefono }}</span>
-                </div>
-              }
-              <div class="detail-row">
-                <span class="detail-label">✉️ {{ i18n.t('suppliers.emails') }}</span>
-                <span class="detail-value">{{ proveedor.correos?.length || 0 }}/4</span>
-              </div>
-            </div>
-
-            @if (proveedor.correos && proveedor.correos.length > 0) {
-              <div class="supplier-emails">
-                @for (correo of proveedor.correos; track correo.id) {
-                  <div class="email-chip" [class.principal]="correo.principal">
-                    {{ correo.correo }}
-                    @if (correo.principal) {
-                      <span class="principal-badge">★</span>
-                    }
-                  </div>
-                }
-              </div>
-            }
-
-            <div class="supplier-actions">
-              <button class="btn btn-secondary btn-sm" (click)="openEditModal(proveedor)">{{ i18n.t('actions.view') }}</button>
-              <button class="btn btn-primary btn-sm" (click)="openEditModal(proveedor)">{{ i18n.t('actions.edit') }}</button>
-            </div>
-          </div>
-        } @empty {
-          <div class="no-data card">
-            <p class="text-muted text-center">{{ i18n.t('msg.no_data') }}</p>
+      <div class="suppliers-container relative">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
           </div>
         }
+
+        <div class="suppliers-grid">
+          @for (proveedor of filteredProveedores(); track proveedor.id) {
+            <div class="supplier-card card">
+              <div class="supplier-header">
+                <div class="supplier-avatar">
+                  {{ getInitials(proveedor.nombre) }}
+                </div>
+                <div class="supplier-info">
+                  <h3>{{ proveedor.nombre }}</h3>
+                  <span class="badge badge-paid">{{ proveedor.servicio?.nombre }}</span>
+                </div>
+                <div class="supplier-status" [class.active]="proveedor.activo">
+                  {{ proveedor.activo ? '●' : '○' }}
+                </div>
+              </div>
+              
+              <div class="supplier-details">
+                @if (proveedor.lenguaje) {
+                  <div class="detail-row">
+                    <span class="detail-label">🌐 {{ i18n.t('suppliers.language') }}</span>
+                    <span class="detail-value">{{ proveedor.lenguaje }}</span>
+                  </div>
+                }
+                @if (proveedor.telefono) {
+                  <div class="detail-row">
+                    <span class="detail-label">📞 {{ i18n.t('suppliers.phone') }}</span>
+                    <span class="detail-value">{{ proveedor.telefono }}</span>
+                  </div>
+                }
+                <div class="detail-row">
+                  <span class="detail-label">✉️ {{ i18n.t('suppliers.emails') }}</span>
+                  <span class="detail-value">{{ proveedor.correos?.length || 0 }}/4</span>
+                </div>
+              </div>
+
+              @if (proveedor.correos && proveedor.correos.length > 0) {
+                <div class="supplier-emails">
+                  @for (correo of proveedor.correos; track correo.id) {
+                    <div class="email-chip" [class.principal]="correo.principal">
+                      {{ correo.correo }}
+                      @if (correo.principal) {
+                        <span class="principal-badge">★</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="supplier-actions">
+                <button class="btn btn-secondary btn-sm" (click)="openEditModal(proveedor)">{{ i18n.t('actions.view') }}</button>
+                <button class="btn btn-primary btn-sm" (click)="openEditModal(proveedor)">{{ i18n.t('actions.edit') }}</button>
+              </div>
+            </div>
+          } @empty {
+            @if (!loading()) {
+              <div class="no-data card">
+                <p class="text-muted text-center">{{ i18n.t('msg.no_data') }}</p>
+              </div>
+            }
+          }
+        </div>
       </div>
 
       <!-- Modal Proveedor -->
@@ -119,6 +130,39 @@ import { ProveedoresService } from '../../services/proveedores.service';
     </div>
   `,
   styles: [`
+    .proveedores-page {
+      position: relative;
+    }
+    .suppliers-container {
+      position: relative;
+      min-height: 200px;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .filters-row {
       display: flex;
       gap: var(--spacing-md);
@@ -247,39 +291,42 @@ export class ProveedoresListComponent implements OnInit {
   
   searchQuery = '';
   filterService = '';
-  loading = false;
-
-  proveedores: Proveedor[] = [];
+  
+  loading = signal(false);
+  proveedores = signal<Proveedor[]>([]);
 
   ngOnInit(): void {
     this.loadProveedores();
   }
 
   loadProveedores(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.proveedoresService.getProveedores().subscribe({
-      next: (proveedores) => {
-        this.proveedores = proveedores;
-        this.loading = false;
+      next: (data) => {
+        this.proveedores.set(data);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando proveedores:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
 
-  get filteredProveedores(): Proveedor[] {
-    return this.proveedores.filter(p => {
-      const matchesSearch = !this.searchQuery || 
-        p.nombre.toLowerCase().includes(this.searchQuery.toLowerCase());
+  filteredProveedores = computed(() => {
+    const query = this.searchQuery.toLowerCase();
+    const service = this.filterService;
+    
+    return this.proveedores().filter(p => {
+      const matchesSearch = !query || 
+        p.nombre.toLowerCase().includes(query);
       
-      const matchesService = !this.filterService || 
-        p.servicio?.nombre === this.filterService;
+      const matchesService = !service || 
+        p.servicio?.nombre === service;
       
       return matchesSearch && matchesService;
     });
-  }
+  });
 
   getInitials(name?: string | null): string {
     const safe = String(name || '').trim();

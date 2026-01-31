@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { EnvioCorreo } from '../../models/interfaces';
@@ -20,15 +20,22 @@ import { CorreosService } from '../../services/correos.service';
 
       <!-- Tabs -->
       <div class="tabs mb-3">
-        <button class="tab" [class.active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
+        <button class="tab" [class.active]="activeTab() === 'pending'" (click)="activeTab.set('pending')">
           ⏳ {{ i18n.t('emails.pending_count') }} ({{ getPendingCount() }})
         </button>
-        <button class="tab" [class.active]="activeTab === 'sent'" (click)="activeTab = 'sent'">
+        <button class="tab" [class.active]="activeTab() === 'sent'" (click)="activeTab.set('sent')">
           ✅ {{ i18n.t('emails.sent_count') }} ({{ getSentCount() }})
         </button>
       </div>
 
-      <div class="card">
+      <div class="card relative">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
+          </div>
+        }
+
         <div class="table-container">
           <table>
             <thead>
@@ -43,7 +50,7 @@ import { CorreosService } from '../../services/correos.service';
               </tr>
             </thead>
             <tbody>
-              @for (correo of filteredCorreos; track correo.id) {
+              @for (correo of filteredCorreos(); track correo.id) {
                 <tr>
                   <td><strong>{{ correo.proveedor?.nombre }}</strong></td>
                   <td>{{ correo.correoSeleccionado }}</td>
@@ -64,9 +71,11 @@ import { CorreosService } from '../../services/correos.service';
                   </td>
                 </tr>
               } @empty {
-                <tr>
-                  <td colspan="7" class="text-center text-muted">{{ i18n.t('msg.no_data') }}</td>
-                </tr>
+                @if (!loading()) {
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">{{ i18n.t('msg.no_data') }}</td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
@@ -148,6 +157,35 @@ import { CorreosService } from '../../services/correos.service';
     </div>
   `,
   styles: [`
+    .correos-page {
+      position: relative;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .tabs {
       display: flex;
       gap: var(--spacing-sm);
@@ -213,28 +251,28 @@ import { CorreosService } from '../../services/correos.service';
 export class CorreosListComponent implements OnInit {
   i18n = inject(I18nService);
   private correosService = inject(CorreosService);
-  activeTab: 'pending' | 'sent' = 'pending';
-
+  
+  activeTab = signal<'pending' | 'sent'>('pending');
+  loading = signal(false);
+  correos = signal<EnvioCorreo[]>([]);
+  
   isModalOpen = false;
-  loading = false;
   selectedCorreo?: EnvioCorreo;
-
-  correos: EnvioCorreo[] = [];
 
   ngOnInit(): void {
     this.loadCorreos();
   }
 
   loadCorreos(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.correosService.getCorreos().subscribe({
-      next: (correos) => {
-        this.correos = correos;
-        this.loading = false;
+      next: (data) => {
+        this.correos.set(data);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando correos:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
@@ -249,14 +287,16 @@ export class CorreosListComponent implements OnInit {
     this.selectedCorreo = undefined;
   }
 
-  get filteredCorreos(): EnvioCorreo[] {
-    return this.correos.filter(c => 
-      this.activeTab === 'pending' ? c.estado === 'BORRADOR' : c.estado === 'ENVIADO'
+  filteredCorreos = computed(() => {
+    const list = this.correos();
+    const tab = this.activeTab();
+    return list.filter(c => 
+      tab === 'pending' ? c.estado === 'BORRADOR' : c.estado === 'ENVIADO'
     );
-  }
+  });
 
-  getPendingCount(): number { return this.correos.filter(c => c.estado === 'BORRADOR').length; }
-  getSentCount(): number { return this.correos.filter(c => c.estado === 'ENVIADO').length; }
+  getPendingCount = computed(() => this.correos().filter(c => c.estado === 'BORRADOR').length);
+  getSentCount = computed(() => this.correos().filter(c => c.estado === 'ENVIADO').length);
 
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat(this.i18n.language() === 'fr' ? 'fr-CA' : 'es-ES', { style: 'currency', currency: 'CAD' }).format(amount);

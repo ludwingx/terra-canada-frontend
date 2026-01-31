@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { CuentaBancaria } from '../../models/interfaces';
@@ -14,7 +14,7 @@ import { CuentasService } from '../../services/cuentas.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('accounts.title') }}</h1>
-          <p class="header-subtitle">{{ cuentas.length }} {{ i18n.t('accounts.count') }}</p>
+          <p class="header-subtitle">{{ cuentas().length }} {{ i18n.t('accounts.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -22,7 +22,14 @@ import { CuentasService } from '../../services/cuentas.service';
         </button>
       </div>
 
-      <div class="card">
+      <div class="card relative">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
+          </div>
+        }
+
         <div class="table-container">
           <table>
             <thead>
@@ -36,7 +43,7 @@ import { CuentasService } from '../../services/cuentas.service';
               </tr>
             </thead>
             <tbody>
-              @for (cuenta of cuentas; track cuenta.id) {
+              @for (cuenta of cuentas(); track cuenta.id) {
                 <tr>
                   <td>
                     <div class="bank-name">
@@ -63,6 +70,14 @@ import { CuentasService } from '../../services/cuentas.service';
                     </div>
                   </td>
                 </tr>
+              } @empty {
+                @if (!loading()) {
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">
+                      {{ i18n.t('msg.no_data') }}
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
@@ -78,6 +93,35 @@ import { CuentasService } from '../../services/cuentas.service';
     </div>
   `,
   styles: [`
+    .cuentas-page {
+      position: relative;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .bank-name {
       display: flex;
       align-items: center;
@@ -90,34 +134,37 @@ import { CuentasService } from '../../services/cuentas.service';
       border-radius: 4px;
       font-family: monospace;
     }
+    .actions-cell {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
   `]
 })
 export class CuentasListComponent implements OnInit {
   i18n = inject(I18nService);
   private cuentasService = inject(CuentasService);
   
-  loading = false;
+  loading = signal(false);
+  cuentas = signal<CuentaBancaria[]>([]);
 
   // Modal handling
   isModalOpen = false;
   selectedCuenta?: CuentaBancaria;
-
-  cuentas: CuentaBancaria[] = [];
 
   ngOnInit(): void {
     this.loadCuentas();
   }
 
   loadCuentas(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.cuentasService.getCuentas().subscribe({
-      next: (cuentas) => {
-        this.cuentas = cuentas;
-        this.loading = false;
+      next: (data) => {
+        this.cuentas.set(data);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando cuentas:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }

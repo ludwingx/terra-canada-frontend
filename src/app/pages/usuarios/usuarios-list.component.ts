@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { I18nService } from '../../services/i18n.service';
 import { Usuario } from '../../models/interfaces';
@@ -14,7 +14,7 @@ import { UsuariosService } from '../../services/usuarios.service';
       <div class="page-header">
         <div>
           <h1>{{ i18n.t('users.title') }}</h1>
-          <p class="header-subtitle">{{ usuarios.length }} {{ i18n.t('users.count') }}</p>
+          <p class="header-subtitle">{{ usuarios().length }} {{ i18n.t('users.count') }}</p>
         </div>
         <button class="btn btn-primary" (click)="openCreateModal()">
           <span>➕</span>
@@ -23,6 +23,13 @@ import { UsuariosService } from '../../services/usuarios.service';
       </div>
 
       <div class="card">
+        @if (loading()) {
+          <div class="loading-overlay">
+            <div class="spinner"></div>
+            <p>{{ i18n.t('msg.loading') }}</p>
+          </div>
+        }
+
         <div class="table-container">
           <table>
             <thead>
@@ -36,7 +43,7 @@ import { UsuariosService } from '../../services/usuarios.service';
               </tr>
             </thead>
             <tbody>
-              @for (user of usuarios; track user.id) {
+              @for (user of usuarios(); track user.id) {
                 <tr>
                   <td>
                     <div class="user-cell">
@@ -65,6 +72,14 @@ import { UsuariosService } from '../../services/usuarios.service';
                     </div>
                   </td>
                 </tr>
+              } @empty {
+                @if (!loading()) {
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">
+                      {{ i18n.t('msg.no_data') }}
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
@@ -80,6 +95,35 @@ import { UsuariosService } from '../../services/usuarios.service';
     </div>
   `,
   styles: [`
+    .usuarios-page {
+      position: relative;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--border-radius);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: var(--spacing-sm);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .user-cell {
       display: flex;
       align-items: center;
@@ -115,28 +159,27 @@ export class UsuariosListComponent implements OnInit {
   i18n = inject(I18nService);
   private usuariosService = inject(UsuariosService);
   
-  loading = false;
+  loading = signal(false);
+  usuarios = signal<Usuario[]>([]);
 
   // Modal handling
   isModalOpen = false;
   selectedUsuario?: Usuario;
-
-  usuarios: Usuario[] = [];
 
   ngOnInit(): void {
     this.loadUsuarios();
   }
 
   loadUsuarios(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.usuariosService.getUsuarios().subscribe({
       next: (users) => {
-        this.usuarios = users;
-        this.loading = false;
+        this.usuarios.set(users);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error cargando usuarios:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
