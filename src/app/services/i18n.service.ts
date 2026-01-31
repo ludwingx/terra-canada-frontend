@@ -211,7 +211,6 @@ export class I18nService {
     'actions.filter': { fr: 'Filtrer', es: 'Filtrar' },
     'actions.export': { fr: 'Exporter', es: 'Exportar' },
     'actions.refresh': { fr: 'Actualiser', es: 'Actualizar' },
-    'actions.search': { fr: 'Rechercher', es: 'Buscar' },
     'actions.confirm': { fr: 'Confirmer', es: 'Confirmar' },
     'actions.send': { fr: 'Envoyer', es: 'Enviar' },
     'actions.upload': { fr: 'Télécharger', es: 'Subir' },
