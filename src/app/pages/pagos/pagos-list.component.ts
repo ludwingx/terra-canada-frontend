@@ -122,7 +122,7 @@ import { PagosService } from '../../services/pagos.service';
                   <td class="text-muted">{{ formatDate(pago.fechaCreacion) }}</td>
                   <td>
                     <div class="actions-cell">
-                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openEditModal(pago)">👁️</button>
+                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openViewModal(pago)">👁️</button>
                       <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.edit') }}" [disabled]="pago.verificado" (click)="openEditModal(pago)">✏️</button>
                       <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.delete') }}" (click)="deletePago(pago.id)" [disabled]="pago.gmailEnviado">🗑️</button>
                     </div>
@@ -145,6 +145,7 @@ import { PagosService } from '../../services/pagos.service';
       <app-pago-modal
         [isOpen]="isModalOpen"
         [pago]="selectedPago"
+        [viewOnly]="isViewOnly"
         (closed)="closeModal()"
         (saved)="onPagoSaved($event)"
       />
@@ -242,6 +243,7 @@ export class PagosListComponent implements OnInit {
 
   // Modal handling
   isModalOpen = false;
+  isViewOnly = false;
   selectedPago?: Pago;
 
   ngOnInit(): void {
@@ -266,11 +268,19 @@ export class PagosListComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    this.isViewOnly = false;
     this.selectedPago = undefined;
     this.isModalOpen = true;
   }
 
   openEditModal(pago: Pago): void {
+    this.isViewOnly = false;
+    this.selectedPago = pago;
+    this.isModalOpen = true;
+  }
+
+  openViewModal(pago: Pago): void {
+    this.isViewOnly = true;
     this.selectedPago = pago;
     this.isModalOpen = true;
   }

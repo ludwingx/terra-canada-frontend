@@ -67,7 +67,7 @@ import { UsuariosService } from '../../services/usuarios.service';
                   </td>
                    <td>
                     <div class="actions-cell">
-                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openEditModal(user)">👁️</button>
+                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openViewModal(user)">👁️</button>
                       <button class="btn btn-icon btn-sm" (click)="openEditModal(user)">✏️</button>
                     </div>
                   </td>
@@ -89,6 +89,7 @@ import { UsuariosService } from '../../services/usuarios.service';
       <app-usuario-modal
         [isOpen]="isModalOpen"
         [usuario]="selectedUsuario"
+        [viewOnly]="isViewOnly"
         (closed)="closeModal()"
         (saved)="onUsuarioSaved($event)"
       />
@@ -164,6 +165,7 @@ export class UsuariosListComponent implements OnInit {
 
   // Modal handling
   isModalOpen = false;
+  isViewOnly = false;
   selectedUsuario?: Usuario;
 
   ngOnInit(): void {
@@ -185,11 +187,19 @@ export class UsuariosListComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    this.isViewOnly = false;
     this.selectedUsuario = undefined;
     this.isModalOpen = true;
   }
 
   openEditModal(usuario: Usuario): void {
+    this.isViewOnly = false;
+    this.selectedUsuario = usuario;
+    this.isModalOpen = true;
+  }
+
+  openViewModal(usuario: Usuario): void {
+    this.isViewOnly = true;
     this.selectedUsuario = usuario;
     this.isModalOpen = true;
   }

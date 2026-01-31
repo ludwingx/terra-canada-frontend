@@ -14,9 +14,10 @@ import { UsuariosService } from '../../../services/usuarios.service';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? i18n.t('actions.edit_user') : i18n.t('actions.new_user')"
+      [title]="viewOnly ? i18n.t('actions.view_user') : (isEdit ? i18n.t('actions.edit_user') : i18n.t('actions.new_user'))"
       [loading]="loading"
-      [canSave]="isFormValid()"
+      [canSave]="!viewOnly && isFormValid()"
+      [showFooter]="!viewOnly"
       size="md"
       (closed)="onClose()"
       (saved)="onSave()"
@@ -31,7 +32,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
             [(ngModel)]="form.nombreUsuario" 
             name="nombreUsuario"
             placeholder="usuario123"
-            [disabled]="isEdit"
+            [disabled]="isEdit || viewOnly"
           >
           @if (!isEdit) {
             <small class="form-hint">{{ i18n.t('users.no_edit_hint') }}</small>
@@ -47,6 +48,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
             [(ngModel)]="form.nombreCompleto" 
             name="nombreCompleto"
             [placeholder]="i18n.t('users.fullname_placeholder')"
+            [disabled]="viewOnly"
           >
         </div>
 
@@ -59,6 +61,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
             [(ngModel)]="form.correo" 
             name="correo"
             placeholder="usuario@terracanada.ca"
+            [disabled]="viewOnly"
           >
         </div>
 
@@ -71,6 +74,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
             [(ngModel)]="form.telefono" 
             name="telefono"
             placeholder="+1 514 555-0000"
+            [disabled]="viewOnly"
           >
         </div>
 
@@ -85,6 +89,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
                   name="rolId" 
                   [value]="rol.id"
                   [(ngModel)]="form.rolId"
+                  [disabled]="viewOnly"
                 >
                 <span class="role-name">{{ rol.nombre }}</span>
                 <span class="role-desc">{{ rol.descripcion }}</span>
@@ -110,7 +115,7 @@ import { UsuariosService } from '../../../services/usuarios.service';
         <!-- Estado activo -->
         <div class="form-group">
           <label class="checkbox-label">
-            <input type="checkbox" [(ngModel)]="form.activo" name="activo">
+            <input type="checkbox" [(ngModel)]="form.activo" name="activo" [disabled]="viewOnly">
             {{ i18n.t('status.active') }}
           </label>
         </div>
@@ -205,6 +210,7 @@ export class UsuarioModalComponent implements OnInit, OnChanges {
   private usuariosService = inject(UsuariosService);
 
   @Input() isOpen = false;
+  @Input() viewOnly = false;
   @Input() usuario?: Usuario;
 
   @Output() closed = new EventEmitter<void>();

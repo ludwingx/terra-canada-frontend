@@ -13,9 +13,10 @@ import { CuentasService } from '../../../services/cuentas.service';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? i18n.t('actions.edit_account') : i18n.t('actions.new_account')"
+      [title]="viewOnly ? i18n.t('actions.view_account') : (isEdit ? i18n.t('actions.edit_account') : i18n.t('actions.new_account'))"
       [loading]="loading"
-      [canSave]="isFormValid()"
+      [canSave]="!viewOnly && isFormValid()"
+      [showFooter]="!viewOnly"
       size="md"
       (closed)="onClose()"
       (saved)="onSave()"
@@ -24,7 +25,7 @@ import { CuentasService } from '../../../services/cuentas.service';
         <!-- Nombre del Banco -->
         <div class="form-group">
           <label class="form-label required">{{ i18n.t('accounts.bank') }}</label>
-          <select class="form-control" [(ngModel)]="form.nombreBanco" name="nombreBanco">
+          <select class="form-control" [(ngModel)]="form.nombreBanco" name="nombreBanco" [disabled]="viewOnly">
             <option value="">{{ i18n.t('accounts.select_bank') }}</option>
             <option value="Banque Nationale">Banque Nationale</option>
             <option value="TD Bank">TD Bank</option>
@@ -45,6 +46,7 @@ import { CuentasService } from '../../../services/cuentas.service';
             [(ngModel)]="form.nombreCuenta" 
             name="nombreCuenta"
             [placeholder]="i18n.t('accounts.name_placeholder')"
+            [disabled]="viewOnly"
           >
         </div>
 
@@ -59,13 +61,14 @@ import { CuentasService } from '../../../services/cuentas.service';
             placeholder="0000"
             maxlength="4"
             pattern="[0-9]{4}"
+            [disabled]="viewOnly"
           >
         </div>
 
         <!-- Moneda -->
         <div class="form-group">
           <label class="form-label required">{{ i18n.t('payments.currency') }}</label>
-          <select class="form-control" [(ngModel)]="form.moneda" name="moneda">
+          <select class="form-control" [(ngModel)]="form.moneda" name="moneda" [disabled]="viewOnly">
             <option value="CAD">CAD - Dollar canadien</option>
             <option value="USD">USD - Dollar américain</option>
           </select>
@@ -74,7 +77,7 @@ import { CuentasService } from '../../../services/cuentas.service';
         <!-- Estado activo -->
         <div class="form-group">
           <label class="checkbox-label">
-            <input type="checkbox" [(ngModel)]="form.activo" name="activo">
+            <input type="checkbox" [(ngModel)]="form.activo" name="activo" [disabled]="viewOnly">
             {{ i18n.t('status.active') }}
           </label>
         </div>
@@ -122,6 +125,7 @@ export class CuentaModalComponent implements OnInit, OnChanges {
   private cuentasService = inject(CuentasService);
 
   @Input() isOpen = false;
+  @Input() viewOnly = false;
   @Input() cuenta?: CuentaBancaria;
 
   @Output() closed = new EventEmitter<void>();

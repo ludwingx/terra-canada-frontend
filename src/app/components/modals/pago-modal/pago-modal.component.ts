@@ -19,9 +19,10 @@ import { forkJoin } from 'rxjs';
   template: `
     <app-modal
       [isOpen]="isOpen"
-      [title]="isEdit ? i18n.t('payments.edit_title') : i18n.t('payments.new_title')"
+      [title]="viewOnly ? i18n.t('payments.view_title') : (isEdit ? i18n.t('payments.edit_title') : i18n.t('payments.new_title'))"
       [loading]="loading"
-      [canSave]="isFormValid()"
+      [canSave]="!viewOnly && isFormValid()"
+      [showFooter]="!viewOnly"
       size="lg"
       (closed)="onClose()"
       (saved)="onSave()"
@@ -39,13 +40,14 @@ import { forkJoin } from 'rxjs';
                 [(ngModel)]="form.codigoReserva" 
                 name="codigoReserva"
                 placeholder="RES-2026-XXX"
+                [disabled]="viewOnly"
               >
             </div>
 
             <!-- Proveedor -->
             <div class="form-group">
               <label class="form-label required">{{ i18n.t('payments.supplier') }}</label>
-              <select class="form-control" [(ngModel)]="form.proveedorId" name="proveedorId">
+              <select class="form-control" [(ngModel)]="form.proveedorId" name="proveedorId" [disabled]="viewOnly">
                 <option [ngValue]="null">{{ i18n.t('payments.select_supplier') }}</option>
                 @for (p of proveedores; track p.id) {
                   <option [ngValue]="p.id">{{ p.nombre }}</option>
@@ -66,6 +68,7 @@ import { forkJoin } from 'rxjs';
                   placeholder="0.00"
                   min="0"
                   step="0.01"
+                  [disabled]="viewOnly"
                 >
               </div>
             </div>
@@ -73,7 +76,7 @@ import { forkJoin } from 'rxjs';
             <!-- Moneda -->
             <div class="form-group">
               <label class="form-label required">{{ i18n.t('payments.currency') }}</label>
-              <select class="form-control" [(ngModel)]="form.moneda" name="moneda" (ngModelChange)="onMonedaChange()">
+              <select class="form-control" [(ngModel)]="form.moneda" name="moneda" (ngModelChange)="onMonedaChange()" [disabled]="viewOnly">
                 <option value="CAD">CAD - Dollar canadien</option>
                 <option value="USD">USD - Dollar américain</option>
               </select>
@@ -88,7 +91,8 @@ import { forkJoin } from 'rxjs';
               type="button"
               class="method-card"
               [class.active]="form.tipoMedioPago === 'TARJETA'"
-              (click)="form.tipoMedioPago = 'TARJETA'; onTipoChange()"
+              (click)="!viewOnly && (form.tipoMedioPago = 'TARJETA'); !viewOnly && onTipoChange()"
+              [disabled]="viewOnly"
             >
               <div class="method-icon">💳</div>
               <div class="method-name">{{ i18n.t('cards.title') }}</div>
@@ -98,7 +102,8 @@ import { forkJoin } from 'rxjs';
               type="button"
               class="method-card"
               [class.active]="form.tipoMedioPago === 'CUENTA_BANCARIA'"
-              (click)="form.tipoMedioPago = 'CUENTA_BANCARIA'; onTipoChange()"
+              (click)="!viewOnly && (form.tipoMedioPago = 'CUENTA_BANCARIA'); !viewOnly && onTipoChange()"
+              [disabled]="viewOnly"
             >
               <div class="method-icon">🏦</div>
               <div class="method-name">{{ i18n.t('accounts.title') }}</div>
@@ -111,7 +116,7 @@ import { forkJoin } from 'rxjs';
             <div class="form-group">
               @if (form.tipoMedioPago === 'TARJETA') {
                 <label class="form-label required">{{ i18n.t('filter.cards') }}</label>
-                <select class="form-control" [(ngModel)]="form.tarjetaId" name="tarjetaId">
+                <select class="form-control" [(ngModel)]="form.tarjetaId" name="tarjetaId" [disabled]="viewOnly">
                   <option [ngValue]="null">{{ i18n.t('actions.select') }}</option>
                   @for (t of tarjetasFiltradas; track t.id) {
                     <option [ngValue]="t.id">****{{ t.ultimos4Digitos }} - {{ t.nombreTitular }} ({{ formatCurrency(t.saldoDisponible, t.moneda) }})</option>
@@ -119,7 +124,7 @@ import { forkJoin } from 'rxjs';
                 </select>
               } @else {
                 <label class="form-label required">{{ i18n.t('filter.accounts') }}</label>
-                <select class="form-control" [(ngModel)]="form.cuentaBancariaId" name="cuentaBancariaId">
+                <select class="form-control" [(ngModel)]="form.cuentaBancariaId" name="cuentaBancariaId" [disabled]="viewOnly">
                   <option [ngValue]="null">{{ i18n.t('actions.select') }}</option>
                   @for (c of cuentasFiltradas; track c.id) {
                     <option [ngValue]="c.id">{{ c.nombreBanco }} - ****{{ c.ultimos4Digitos }} ({{ c.moneda }})</option>
@@ -145,19 +150,23 @@ import { forkJoin } from 'rxjs';
               @for (c of selectedClientes; track c.id) {
                 <span class="chip">
                   <span class="chip-text">{{ c.nombre }}</span>
-                  <button type="button" class="chip-remove" (click)="removeCliente(c.id)">×</button>
+                  @if (!viewOnly) {
+                    <button type="button" class="chip-remove" (click)="removeCliente(c.id)">×</button>
+                  }
                 </span>
               }
-              <input
-                type="text"
-                class="chip-input"
-                [placeholder]="i18n.t('payments.add_client_placeholder')"
-                [(ngModel)]="clienteSearch"
-                name="clienteSearch"
-                (focus)="openClienteDropdown()"
-                (blur)="onClienteInputBlur()"
-                (ngModelChange)="openClienteDropdown()"
-              >
+              @if (!viewOnly) {
+                <input
+                  type="text"
+                  class="chip-input"
+                  [placeholder]="i18n.t('payments.add_client_placeholder')"
+                  [(ngModel)]="clienteSearch"
+                  name="clienteSearch"
+                  (focus)="openClienteDropdown()"
+                  (blur)="onClienteInputBlur()"
+                  (ngModelChange)="openClienteDropdown()"
+                >
+              }
             </div>
 
             @if (isClienteDropdownOpen) {
@@ -186,6 +195,7 @@ import { forkJoin } from 'rxjs';
             class="form-control" 
             [(ngModel)]="form.fechaEsperadaDebito" 
             name="fechaEsperadaDebito"
+            [disabled]="viewOnly"
           >
         </div>
 
@@ -197,6 +207,7 @@ import { forkJoin } from 'rxjs';
             class="form-control" 
             [(ngModel)]="form.descripcion" 
             name="descripcion"
+            [disabled]="viewOnly"
           >
         </div>
 
@@ -205,11 +216,11 @@ import { forkJoin } from 'rxjs';
           <div class="form-group full-width">
             <div class="status-toggles">
               <label class="checkbox-label">
-                <input type="checkbox" [(ngModel)]="form.pagado" name="pagado">
+                <input type="checkbox" [(ngModel)]="form.pagado" name="pagado" [disabled]="viewOnly">
                 {{ i18n.t('status.paid') }}
               </label>
               <label class="checkbox-label">
-                <input type="checkbox" [(ngModel)]="form.verificado" name="verificado" [disabled]="!form.pagado">
+                <input type="checkbox" [(ngModel)]="form.verificado" name="verificado" [disabled]="!form.pagado || viewOnly">
                 {{ i18n.t('status.verified') }}
               </label>
             </div>
@@ -480,6 +491,7 @@ export class PagoModalComponent implements OnInit, OnChanges {
   private pagosService = inject(PagosService);
 
   @Input() isOpen = false;
+  @Input() viewOnly = false;
   @Input() pago?: Pago;
 
   @Output() closed = new EventEmitter<void>();

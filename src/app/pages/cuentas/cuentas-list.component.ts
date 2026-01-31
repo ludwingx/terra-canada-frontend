@@ -65,7 +65,7 @@ import { CuentasService } from '../../services/cuentas.service';
                   </td>
                   <td>
                     <div class="actions-cell">
-                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openEditModal(cuenta)">👁️</button>
+                      <button class="btn btn-icon btn-sm" title="{{ i18n.t('actions.view') }}" (click)="openViewModal(cuenta)">👁️</button>
                       <button class="btn btn-secondary btn-sm" (click)="openEditModal(cuenta)">{{ i18n.t('actions.edit') }}</button>
                     </div>
                   </td>
@@ -87,6 +87,7 @@ import { CuentasService } from '../../services/cuentas.service';
       <app-cuenta-modal
         [isOpen]="isModalOpen"
         [cuenta]="selectedCuenta"
+        [viewOnly]="isViewOnly"
         (closed)="closeModal()"
         (saved)="onCuentaSaved($event)"
       />
@@ -149,6 +150,7 @@ export class CuentasListComponent implements OnInit {
 
   // Modal handling
   isModalOpen = false;
+  isViewOnly = false;
   selectedCuenta?: CuentaBancaria;
 
   ngOnInit(): void {
@@ -170,11 +172,19 @@ export class CuentasListComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    this.isViewOnly = false;
     this.selectedCuenta = undefined;
     this.isModalOpen = true;
   }
 
   openEditModal(cuenta: CuentaBancaria): void {
+    this.isViewOnly = false;
+    this.selectedCuenta = cuenta;
+    this.isModalOpen = true;
+  }
+
+  openViewModal(cuenta: CuentaBancaria): void {
+    this.isViewOnly = true;
     this.selectedCuenta = cuenta;
     this.isModalOpen = true;
   }
