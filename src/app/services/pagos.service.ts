@@ -158,8 +158,11 @@ export class PagosService {
   }
 
   getPagos(filters?: any): Observable<Pago[]> {
-    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`pagos`, filters).pipe(
-      map(res => (res.data || []).map(p => this.mapPago(p)))
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`pagos`, filters).pipe(
+      map(res => {
+        const rawData = res.data?.data || res.data || [];
+        return (Array.isArray(rawData) ? rawData : []).map(p => this.mapPago(p));
+      })
     );
   }
 
@@ -179,7 +182,7 @@ export class PagosService {
     };
 
     return this.api.post<{ success: boolean; data: any }>(`pagos`, payload).pipe(
-      map(res => this.mapPago(res.data))
+      map(res => this.mapPago(res.data?.data || res.data))
     );
   }
 
@@ -218,7 +221,7 @@ export class PagosService {
       payload.clientes_ids = pago.clientesIds ?? pago.clientes_ids;
 
     return this.api.put<{ success: boolean; data: any }>(`pagos/${id}`, payload).pipe(
-      map(res => this.mapPago(res.data))
+      map(res => this.mapPago(res.data?.data || res.data))
     );
   }
 

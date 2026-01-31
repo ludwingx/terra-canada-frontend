@@ -10,8 +10,11 @@ export class AuditoriaService {
   private api = inject(ApiService);
 
   getEventos(filters?: any): Observable<Evento[]> {
-    return this.api.get<{success: boolean, data: Evento[]}>(`eventos`, filters).pipe(
-      map(res => res.data)
+    return this.api.get<{success: boolean, data: any}>(`eventos`, filters).pipe(
+      map(res => {
+        const rawData = res.data?.data || res.data || [];
+        return Array.isArray(rawData) ? rawData : [];
+      })
     );
   }
 

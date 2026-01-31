@@ -15,8 +15,11 @@ export class RolesService {
       return this.roles$;
     }
 
-    this.roles$ = this.api.get<{ success?: boolean; estado?: boolean; data: Rol[] }>(`roles`).pipe(
-      map(res => res.data || []),
+    this.roles$ = this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`roles`).pipe(
+      map(res => {
+        const rawData = res.data?.data || res.data || [];
+        return Array.isArray(rawData) ? rawData : [];
+      }),
       shareReplay(1)
     );
 

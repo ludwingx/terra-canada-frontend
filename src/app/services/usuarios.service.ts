@@ -20,9 +20,9 @@ export class UsuariosService {
       nombreUsuario: String(u?.nombreUsuario ?? u?.nombre_usuario ?? ''),
       correo: String(u?.correo ?? u?.email ?? ''),
       nombreCompleto: String(u?.nombreCompleto ?? u?.nombre_completo ?? ''),
-      rolId: Number(u?.rolId ?? u?.rol_id ?? u?.rol?.id ?? u?.rol_id ?? 0),
+      rolId: Number(u?.rolId ?? u?.rol_id ?? u?.rol?.id ?? 0),
       rol: u?.rol
-        ? { id: Number(u.rol.id), nombre: String(u.rol.nombre) }
+        ? { id: Number(u.rol.id), nombre: String(u.rol.nombre), descripcion: u?.rol?.descripcion }
         : (u?.rol_nombre ? { id: Number(u?.rol_id ?? 0), nombre: String(u.rol_nombre) } : undefined),
       telefono: u?.telefono ?? undefined,
       activo: Boolean(u?.activo ?? true),
@@ -32,27 +32,30 @@ export class UsuariosService {
   }
 
   getUsuarios(forceRefresh: boolean = false): Observable<Usuario[]> {
-    return this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`usuarios`).pipe(
-      map(res => (res.data || []).map(u => this.mapUsuario(u)))
+    return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`usuarios`).pipe(
+      map(res => {
+        const rawData = res.data?.data || res.data || [];
+        return (Array.isArray(rawData) ? rawData : []).map(u => this.mapUsuario(u));
+      })
     );
   }
 
   getUsuario(id: number): Observable<Usuario> {
     return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`usuarios/${id}`).pipe(
-      map(res => this.mapUsuario(res.data))
+      map(res => this.mapUsuario(res.data?.data || res.data))
     );
   }
 
   createUsuario(usuario: any): Observable<Usuario> {
     return this.api.post<{ success?: boolean; estado?: boolean; data: any }>(`usuarios`, usuario).pipe(
-      map(res => this.mapUsuario(res.data)),
+      map(res => this.mapUsuario(res.data?.data || res.data)),
       tap(() => this.clearCache())
     );
   }
 
   updateUsuario(id: number, usuario: any): Observable<Usuario> {
     return this.api.put<{ success?: boolean; estado?: boolean; data: any }>(`usuarios/${id}`, usuario).pipe(
-      map(res => this.mapUsuario(res.data)),
+      map(res => this.mapUsuario(res.data?.data || res.data)),
       tap(() => this.clearCache())
     );
   }
