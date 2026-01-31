@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, shareReplay } from 'rxjs';
+import { Observable, map, shareReplay, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { Usuario } from '../models/interfaces';
 
@@ -9,6 +9,10 @@ import { Usuario } from '../models/interfaces';
 export class UsuariosService {
   private api = inject(ApiService);
   private usuarios$?: Observable<Usuario[]>;
+
+  private clearCache(): void {
+    this.usuarios$ = undefined;
+  }
 
   private mapUsuario(u: any): Usuario {
     return {
@@ -34,6 +38,9 @@ export class UsuariosService {
 
     this.usuarios$ = this.api.get<{ success?: boolean; estado?: boolean; data: any[] }>(`usuarios`).pipe(
       map(res => (res.data || []).map(u => this.mapUsuario(u))),
+      tap({
+        error: () => this.clearCache()
+      }),
       shareReplay(1)
     );
 
@@ -48,19 +55,22 @@ export class UsuariosService {
 
   createUsuario(usuario: any): Observable<Usuario> {
     return this.api.post<{ success?: boolean; estado?: boolean; data: any }>(`usuarios`, usuario).pipe(
-      map(res => this.mapUsuario(res.data))
+      map(res => this.mapUsuario(res.data)),
+      tap(() => this.clearCache())
     );
   }
 
   updateUsuario(id: number, usuario: any): Observable<Usuario> {
     return this.api.put<{ success?: boolean; estado?: boolean; data: any }>(`usuarios/${id}`, usuario).pipe(
-      map(res => this.mapUsuario(res.data))
+      map(res => this.mapUsuario(res.data)),
+      tap(() => this.clearCache())
     );
   }
 
   deleteUsuario(id: number): Observable<void> {
     return this.api.delete<{ success?: boolean; estado?: boolean; data: null }>(`usuarios/${id}`).pipe(
-      map(() => undefined)
+      map(() => undefined),
+      tap(() => this.clearCache())
     );
   }
 }
