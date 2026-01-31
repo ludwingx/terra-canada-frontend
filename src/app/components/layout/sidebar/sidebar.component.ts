@@ -143,9 +143,12 @@ export class SidebarComponent implements OnInit {
   /**
    * Extraer iniciales del nombre del usuario
    */
-  private extractInitials(name: string): string {
-    return name
+  private extractInitials(name?: string | null): string {
+    const safe = String(name || '').trim();
+    if (!safe) return 'TC';
+    return safe
       .split(' ')
+      .filter(Boolean)
       .map(word => word.charAt(0).toUpperCase())
       .slice(0, 2)
       .join('');
