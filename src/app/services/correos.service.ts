@@ -58,7 +58,7 @@ export class CorreosService {
   }
 
   getPendientes(): Observable<EnvioCorreo[]> {
-    return this.api.get<{ success?: boolean; estado?: boolean; data: EnvioCorreo[] }>(`correos/pendientes`, undefined, { noAuth: true }).pipe(
+    return this.api.get<{ success?: boolean; estado?: boolean; data: EnvioCorreo[] }>(`correos/pendientes`).pipe(
       map(res => res.data || [])
     );
   }
