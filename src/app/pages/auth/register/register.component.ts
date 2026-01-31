@@ -32,7 +32,14 @@ export class RegisterComponent {
     this.errorMessage = '';
     this.isSubmitting = true;
 
-    this.auth.register(this.form.getRawValue()).subscribe({
+    const payload = this.form.getRawValue();
+    this.auth.register({
+      nombre_usuario: String(payload.nombre_usuario || ''),
+      nombre_completo: String(payload.nombre_completo || ''),
+      email: String(payload.email || ''),
+      password: String(payload.password || ''),
+      rol_id: Number(payload.rol_id || 0)
+    }).subscribe({
       next: () => {
         this.isSubmitting = false;
         this.router.navigateByUrl('/login');
