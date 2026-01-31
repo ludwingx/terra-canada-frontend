@@ -17,6 +17,7 @@ export class AuthService {
     return this.api.post<{ estado: boolean; data: { token: string; usuario: Usuario } }>(`auth/login`, credentials).pipe(
       tap(res => {
         if (res.estado && isPlatformBrowser(this.platformId)) {
+          localStorage.setItem('jwt_token', res.data.token);
           localStorage.setItem('token', res.data.token);
           this.currentUser.set(res.data.usuario);
         }
@@ -46,6 +47,7 @@ export class AuthService {
 
   logout(): void {
     if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('jwt_token');
       localStorage.removeItem('token');
     }
     this.currentUser.set(null);
@@ -53,7 +55,7 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     if (isPlatformBrowser(this.platformId)) {
-      return !!localStorage.getItem('token');
+      return !!(localStorage.getItem('jwt_token') || localStorage.getItem('token'));
     }
     return false;
   }
