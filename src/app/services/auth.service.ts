@@ -14,17 +14,39 @@ export class AuthService {
   currentUser = signal<Usuario | null>(null);
   private me$?: Observable<Usuario>;
 
+  private mapUsuario(u: any): Usuario {
+    return {
+      id: Number(u?.id),
+      nombreUsuario: String(u?.nombreUsuario ?? u?.nombre_usuario ?? ''),
+      correo: String(u?.correo ?? u?.email ?? ''),
+      nombreCompleto: String(u?.nombreCompleto ?? u?.nombre_completo ?? ''),
+      rolId: Number(u?.rolId ?? u?.rol_id ?? u?.rol?.id ?? 0),
+      rol: u?.rol
+        ? { id: Number(u.rol.id), nombre: String(u.rol.nombre), descripcion: u?.rol?.descripcion }
+        : undefined,
+      telefono: u?.telefono ?? undefined,
+      activo: Boolean(u?.activo ?? true),
+      fechaCreacion: u?.fechaCreacion ?? u?.fecha_creacion,
+      fechaActualizacion: u?.fechaActualizacion ?? u?.fecha_actualizacion
+    } as Usuario;
+  }
+
   login(credentials: { username: string; password: string }): Observable<{ token: string; usuario: Usuario }> {
-    return this.api.post<{ estado: boolean; data: { token: string; usuario: Usuario } }>(`auth/login`, credentials, { noAuth: true }).pipe(
+    return this.api.post<{ estado: boolean; data: { token: string; usuario?: any; user?: any } }>(`auth/login`, credentials, { noAuth: true }).pipe(
       tap(res => {
         if (res.estado && isPlatformBrowser(this.platformId)) {
           localStorage.setItem('jwt_token', res.data.token);
           localStorage.setItem('token', res.data.token);
-          this.currentUser.set(res.data.usuario);
-          this.me$ = of(res.data.usuario);
+          const rawUser = res.data.usuario ?? res.data.user;
+          const mapped = this.mapUsuario(rawUser);
+          this.currentUser.set(mapped);
+          this.me$ = of(mapped);
         }
       }),
-      map(res => res.data)
+      map(res => {
+        const rawUser = res.data.usuario ?? res.data.user;
+        return { token: res.data.token, usuario: this.mapUsuario(rawUser) };
+      })
     );
   }
 
@@ -52,8 +74,8 @@ export class AuthService {
     }
 
     this.me$ = this.api.get<{ success?: boolean; estado?: boolean; data: Usuario }>(`auth/me`).pipe(
-      tap(res => this.currentUser.set(res.data)),
-      map(res => res.data),
+      map(res => this.mapUsuario(res.data)),
+      tap(user => this.currentUser.set(user)),
       shareReplay(1)
     );
 
