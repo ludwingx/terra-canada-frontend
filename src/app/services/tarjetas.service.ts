@@ -49,7 +49,7 @@ export class TarjetasService {
     const params = clienteId ? { cliente_id: clienteId } : {};
     return this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`tarjetas`, params).pipe(
       map(res => {
-        const rawData = res.data?.data || res.data || [];
+        const rawData = res.data?.data?.data || res.data?.data || res.data || [];
         return (Array.isArray(rawData) ? rawData : []).map(t => this.mapTarjeta(t));
       })
     );

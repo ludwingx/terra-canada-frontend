@@ -118,16 +118,20 @@ import { forkJoin } from 'rxjs';
                 <label class="form-label required">{{ i18n.t('filter.cards') }}</label>
                 <select class="form-control" [(ngModel)]="form.tarjetaId" name="tarjetaId" [disabled]="viewOnly">
                   <option [ngValue]="null">{{ i18n.t('actions.select') }}</option>
-                  @for (t of tarjetasFiltradas; track t.id) {
-                    <option [ngValue]="t.id">****{{ t.ultimos4Digitos }} - {{ t.nombreTitular }} ({{ formatCurrency(t.saldoDisponible, t.moneda) }})</option>
+                  @for (t of tarjetas; track t.id) {
+                    <option [ngValue]="t.id" [disabled]="t.moneda !== form.moneda">
+                      ****{{ t.ultimos4Digitos }} - {{ t.nombreTitular }} ({{ t.moneda }}) - [{{ formatCurrency(t.saldoDisponible, t.moneda) }}]
+                    </option>
                   }
                 </select>
               } @else {
                 <label class="form-label required">{{ i18n.t('filter.accounts') }}</label>
                 <select class="form-control" [(ngModel)]="form.cuentaBancariaId" name="cuentaBancariaId" [disabled]="viewOnly">
                   <option [ngValue]="null">{{ i18n.t('actions.select') }}</option>
-                  @for (c of cuentasFiltradas; track c.id) {
-                    <option [ngValue]="c.id">{{ c.nombreBanco }} - ****{{ c.ultimos4Digitos }} ({{ c.moneda }})</option>
+                  @for (c of cuentas; track c.id) {
+                    <option [ngValue]="c.id" [disabled]="c.moneda !== form.moneda">
+                      {{ c.nombreBanco }} - ****{{ c.ultimos4Digitos }} ({{ c.moneda }})
+                    </option>
                   }
                 </select>
               }
