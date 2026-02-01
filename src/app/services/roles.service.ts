@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, shareReplay } from 'rxjs';
+import { Observable, map, tap, shareReplay } from 'rxjs';
 import { ApiService } from './api.service';
 import { Rol } from '../models/interfaces';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class RolesService {
   private api = inject(ApiService);
@@ -16,11 +16,12 @@ export class RolesService {
     }
 
     this.roles$ = this.api.get<{ success?: boolean; estado?: boolean; data: any }>(`roles`).pipe(
-      map(res => {
+      tap((res) => console.log('GET Roles response:', res)),
+      map((res) => {
         const rawData = res.data?.data || res.data || [];
         return Array.isArray(rawData) ? rawData : [];
       }),
-      shareReplay(1)
+      shareReplay(1),
     );
 
     return this.roles$;

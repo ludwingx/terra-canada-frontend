@@ -1,4 +1,13 @@
-import { Component, EventEmitter, Input, Output, inject, OnChanges, SimpleChanges, OnInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  inject,
+  OnChanges,
+  SimpleChanges,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
@@ -30,13 +39,13 @@ interface CorreoForm {
         <!-- Nombre -->
         <div class="form-group full-width">
           <label class="form-label required">{{ i18n.t('suppliers.name') }}</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            [(ngModel)]="form.nombre" 
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="form.nombre"
             name="nombre"
             [placeholder]="i18n.t('actions.supplier_name_placeholder')"
-          >
+          />
         </div>
 
         <!-- Servicio -->
@@ -65,21 +74,21 @@ interface CorreoForm {
         <!-- Teléfono -->
         <div class="form-group">
           <label class="form-label">{{ i18n.t('suppliers.phone') }}</label>
-          <input 
-            type="tel" 
-            class="form-control" 
-            [(ngModel)]="form.telefono" 
+          <input
+            type="tel"
+            class="form-control"
+            [(ngModel)]="form.telefono"
             name="telefono"
             placeholder="+1 514 555-0000"
-          >
+          />
         </div>
 
         <!-- Descripción -->
         <div class="form-group full-width">
           <label class="form-label">{{ i18n.t('audit.description') }}</label>
-          <textarea 
-            class="form-control" 
-            [(ngModel)]="form.descripcion" 
+          <textarea
+            class="form-control"
+            [(ngModel)]="form.descripcion"
             name="descripcion"
             rows="2"
           ></textarea>
@@ -87,28 +96,36 @@ interface CorreoForm {
 
         <!-- Correos (máximo 4) -->
         <div class="form-group full-width">
-          <label class="form-label">{{ i18n.t('suppliers.emails') }} ({{ correos.length }}/4)</label>
-          
+          <label class="form-label"
+            >{{ i18n.t('suppliers.emails') }} ({{ correos.length }}/4)</label
+          >
+
           <div class="correos-list">
             @for (correo of correos; track $index; let i = $index) {
               <div class="correo-row">
-                <input 
-                  type="email" 
-                  class="form-control" 
-                  [(ngModel)]="correo.correo" 
+                <input
+                  type="email"
+                  class="form-control"
+                  [(ngModel)]="correo.correo"
                   [name]="'correo_' + i"
                   placeholder="email@example.com"
-                >
+                />
                 <label class="checkbox-label">
-                  <input 
-                    type="radio" 
-                    name="principal" 
+                  <input
+                    type="radio"
+                    name="principal"
                     [checked]="correo.principal"
                     (change)="setPrincipal(i)"
-                  >
+                  />
                   {{ i18n.t('actions.principal') }}
                 </label>
-                <button type="button" class="btn btn-icon btn-danger-text" (click)="removeCorreo(i)">🗑️</button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-danger-text"
+                  (click)="removeCorreo(i)"
+                >
+                  🗑️
+                </button>
               </div>
             }
           </div>
@@ -123,76 +140,88 @@ interface CorreoForm {
         <!-- Estado activo -->
         <div class="form-group">
           <label class="checkbox-label">
-            <input type="checkbox" [(ngModel)]="form.activo" name="activo">
+            <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
             {{ i18n.t('status.active') }}
           </label>
         </div>
       </form>
     </app-modal>
   `,
-  styles: [`
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--spacing-md);
-    }
-
-    .full-width { grid-column: 1 / -1; }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-xs);
-    }
-
-    .form-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-secondary);
-
-      &.required::after {
-        content: ' *';
-        color: #dc3545;
+  styles: [
+    `
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
       }
-    }
 
-    .correos-list {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-sm);
-    }
+      .full-width {
+        grid-column: 1 / -1;
+      }
 
-    .correo-row {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
 
-      .form-control { flex: 1; }
-    }
+      .form-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
 
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-xs);
-      font-size: 13px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      white-space: nowrap;
+        &.required::after {
+          content: ' *';
+          color: #dc3545;
+        }
+      }
 
-      input { cursor: pointer; }
-    }
+      .correos-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+      }
 
-    .btn-danger-text {
-      color: #dc3545;
-      background: transparent;
-      border: none;
-      padding: 4px;
+      .correo-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
 
-      &:hover { background: #fee2e2; }
-    }
+        .form-control {
+          flex: 1;
+        }
+      }
 
-    .mt-2 { margin-top: var(--spacing-sm); }
-  `]
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        white-space: nowrap;
+
+        input {
+          cursor: pointer;
+        }
+      }
+
+      .btn-danger-text {
+        color: #dc3545;
+        background: transparent;
+        border: none;
+        padding: 4px;
+
+        &:hover {
+          background: #fee2e2;
+        }
+      }
+
+      .mt-2 {
+        margin-top: var(--spacing-sm);
+      }
+    `,
+  ],
 })
 export class ProveedorModalComponent implements OnInit, OnChanges {
   i18n = inject(I18nService);
@@ -214,7 +243,7 @@ export class ProveedorModalComponent implements OnInit, OnChanges {
     lenguaje: '',
     telefono: '',
     descripcion: '',
-    activo: true
+    activo: true,
   };
 
   correos: CorreoForm[] = [{ correo: '', principal: true }];
@@ -225,8 +254,8 @@ export class ProveedorModalComponent implements OnInit, OnChanges {
 
   loadServicios(): void {
     this.serviciosService.getServicios().subscribe({
-      next: (servicios) => this.servicios = servicios,
-      error: (err) => console.error('Error cargando servicios:', err)
+      next: (servicios) => (this.servicios = servicios),
+      error: (err) => console.error('Error cargando servicios:', err),
     });
   }
 
@@ -244,18 +273,17 @@ export class ProveedorModalComponent implements OnInit, OnChanges {
           lenguaje: this.proveedor.lenguaje || '',
           telefono: this.proveedor.telefono || '',
           descripcion: this.proveedor.descripcion || '',
-          activo: this.proveedor.activo
+          activo: this.proveedor.activo,
         };
-        this.correos = this.proveedor.correos?.map(c => ({
+        this.correos = this.proveedor.correos?.map((c) => ({
           correo: c.correo,
-          principal: c.principal
+          principal: c.principal,
         })) || [{ correo: '', principal: true }];
       } else {
         this.resetForm();
       }
     }
   }
-
 
   isFormValid(): boolean {
     return !!(this.form.nombre.trim() && this.form.servicioId);
@@ -276,7 +304,7 @@ export class ProveedorModalComponent implements OnInit, OnChanges {
   }
 
   setPrincipal(index: number): void {
-    this.correos.forEach((c, i) => c.principal = i === index);
+    this.correos.forEach((c, i) => (c.principal = i === index));
   }
 
   onClose(): void {
@@ -289,35 +317,48 @@ export class ProveedorModalComponent implements OnInit, OnChanges {
 
     this.loading = true;
 
-    // Nota: El backend espera correos por separado o dentro del objeto? 
-    // DOCUMENTACION_ENDPOINTS.md no muestra correos en el POST /proveedores inicial.
-    // Pero asumiremos que el backend los manejará o los ignorará si no están listos.
     const proveedorData: any = {
       nombre: this.form.nombre,
       servicio_id: this.form.servicioId!,
       lenguaje: this.form.lenguaje || null,
       telefono: this.form.telefono || null,
-      descripcion: this.form.descripcion || null
+      descripcion: this.form.descripcion || null,
+      correos: this.correos
+        .filter((c) => c.correo.trim())
+        .map((c) => ({
+          correo: c.correo,
+          principal: c.principal,
+        })),
     };
 
-    // Si el backend tuviera endpoint de update, lo usaríamos. 
-    // Por ahora DOCUMENTACION_ENDPOINTS.md solo tiene create.
-    // Usaremos createProveedor para ambos casos como fallback si no hay PUT definido.
-    this.proveedoresService.createProveedor(proveedorData).subscribe({
-      next: (res) => {
+    console.log('Proveedor modal onSave:', { isEdit: this.isEdit, proveedorData });
+
+    const action = this.isEdit
+      ? this.proveedoresService.updateProveedor(this.proveedor!.id, proveedorData)
+      : this.proveedoresService.createProveedor(proveedorData);
+
+    action.subscribe({
+      next: (res: any) => {
         this.loading = false;
         this.saved.emit(res);
         this.resetForm();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error guardando proveedor:', err);
         this.loading = false;
-      }
+      },
     });
   }
 
   private resetForm(): void {
-    this.form = { nombre: '', servicioId: null, lenguaje: '', telefono: '', descripcion: '', activo: true };
+    this.form = {
+      nombre: '',
+      servicioId: null,
+      lenguaje: '',
+      telefono: '',
+      descripcion: '',
+      activo: true,
+    };
     this.correos = [{ correo: '', principal: true }];
   }
 }

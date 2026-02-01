@@ -1,4 +1,13 @@
-import { Component, EventEmitter, Input, Output, inject, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  inject,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { I18nService } from '../../../services/i18n.service';
@@ -24,96 +33,100 @@ import { ClientesService } from '../../../services/clientes.service';
         <!-- Nombre -->
         <div class="form-group">
           <label class="form-label required">{{ i18n.t('clients.name') }}</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            [(ngModel)]="form.nombre" 
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="form.nombre"
             name="nombre"
             [placeholder]="i18n.t('clients.name_placeholder')"
-          >
+          />
         </div>
 
         <!-- Ubicación -->
         <div class="form-group">
           <label class="form-label">{{ i18n.t('clients.location') }}</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            [(ngModel)]="form.ubicacion" 
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="form.ubicacion"
             name="ubicacion"
             [placeholder]="i18n.t('clients.location_placeholder')"
-          >
+          />
         </div>
 
         <!-- Correo -->
         <div class="form-group">
           <label class="form-label">{{ i18n.t('clients.email') }}</label>
-          <input 
-            type="email" 
-            class="form-control" 
-            [(ngModel)]="form.correo" 
+          <input
+            type="email"
+            class="form-control"
+            [(ngModel)]="form.correo"
             name="correo"
             placeholder="email@hotel.com"
-          >
+          />
         </div>
 
         <!-- Teléfono -->
         <div class="form-group">
           <label class="form-label">{{ i18n.t('suppliers.phone') }}</label>
-          <input 
-            type="tel" 
-            class="form-control" 
-            [(ngModel)]="form.telefono" 
+          <input
+            type="tel"
+            class="form-control"
+            [(ngModel)]="form.telefono"
             name="telefono"
             placeholder="+1 514 555-0000"
-          >
+          />
         </div>
 
         <!-- Estado activo -->
         <div class="form-group">
           <label class="checkbox-label">
-            <input type="checkbox" [(ngModel)]="form.activo" name="activo">
+            <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
             {{ i18n.t('status.active') }}
           </label>
         </div>
       </form>
     </app-modal>
   `,
-  styles: [`
-    .form-stack {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-md);
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-xs);
-    }
-
-    .form-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-secondary);
-
-      &.required::after {
-        content: ' *';
-        color: #dc3545;
+  styles: [
+    `
+      .form-stack {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
       }
-    }
 
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-xs);
-      font-size: 13px;
-      color: var(--text-secondary);
-      cursor: pointer;
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
 
-      input { cursor: pointer; }
-    }
-  `]
+      .form-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+
+        &.required::after {
+          content: ' *';
+          color: #dc3545;
+        }
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+
+        input {
+          cursor: pointer;
+        }
+      }
+    `,
+  ],
 })
 export class ClienteModalComponent implements OnInit, OnChanges {
   i18n = inject(I18nService);
@@ -132,7 +145,7 @@ export class ClienteModalComponent implements OnInit, OnChanges {
     ubicacion: '',
     correo: '',
     telefono: '',
-    activo: true
+    activo: true,
   };
 
   get isEdit(): boolean {
@@ -156,7 +169,7 @@ export class ClienteModalComponent implements OnInit, OnChanges {
         ubicacion: this.cliente.ubicacion || '',
         correo: this.cliente.correo || '',
         telefono: this.cliente.telefono || '',
-        activo: this.cliente.activo
+        activo: this.cliente.activo,
       };
     } else {
       this.resetForm();
@@ -181,12 +194,14 @@ export class ClienteModalComponent implements OnInit, OnChanges {
       nombre: this.form.nombre,
       ubicacion: this.form.ubicacion || null,
       correo: this.form.correo || null,
-      telefono: this.form.telefono || null
+      telefono: this.form.telefono || null,
     };
 
-    // DOCUMENTACION_ENDPOINTS.md solo tiene POST /clientes.
-    // Usaremos create como fallback para ambos casos.
-    this.clientesService.createCliente(clienteData).subscribe({
+    const action = this.isEdit
+      ? this.clientesService.updateCliente(this.cliente!.id, clienteData)
+      : this.clientesService.createCliente(clienteData);
+
+    action.subscribe({
       next: (res) => {
         this.loading = false;
         this.saved.emit(res);
@@ -195,7 +210,7 @@ export class ClienteModalComponent implements OnInit, OnChanges {
       error: (err) => {
         console.error('Error guardando cliente:', err);
         this.loading = false;
-      }
+      },
     });
   }
 

@@ -1,0 +1,8 @@
+// Environment configuration template
+// Copy this file to environment.ts and fill in your values
+// DO NOT commit the actual environment.ts file to git
+
+export const environment = {
+  production: false,
+  apiUrl: 'https://your-api-url-here.com/api/v1'
+};
