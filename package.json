@@ -4,11 +4,13 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "prebuild": "node generate-env.js",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:terra-canada": "node dist/terra-canada/server/server.mjs"
   },
+
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
