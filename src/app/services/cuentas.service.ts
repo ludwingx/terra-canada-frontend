@@ -83,12 +83,10 @@ export class CuentasService {
   }
 
   deleteCuenta(id: number): Observable<void> {
-    const usuario_id = this.getUsuarioIdForAudit();
-    const params = usuario_id ? { usuario_id } : {};
-    console.log(`DELETE Cuenta ${id} params:`, params);
+    console.log(`DELETE Cuenta ${id}`);
 
-    return this.api.delete<{ success: boolean; data: any }>(`cuentas/${id}`, params).pipe(
-      tap((res) => console.log(`DELETE Cuenta ${id} response:`, res)),
+    return this.api.delete<{ success: boolean; data: any }>(`cuentas/${id}`).pipe(
+      tap((res: any) => console.log(`DELETE Cuenta ${id} response:`, res)),
       map(() => undefined),
     );
   }

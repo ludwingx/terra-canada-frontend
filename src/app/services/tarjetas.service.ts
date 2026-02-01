@@ -89,12 +89,10 @@ export class TarjetasService {
   }
 
   deleteTarjeta(id: number): Observable<void> {
-    const usuario_id = this.getUsuarioIdForAudit();
-    const params = usuario_id ? { usuario_id } : {};
-    console.log(`DELETE Tarjeta ${id} params:`, params);
+    console.log(`DELETE Tarjeta ${id}`);
 
-    return this.api.delete<{ success: boolean; data: any }>(`tarjetas/${id}`, params).pipe(
-      tap((res) => console.log(`DELETE Tarjeta ${id} response:`, res)),
+    return this.api.delete<{ success: boolean; data: any }>(`tarjetas/${id}`).pipe(
+      tap((res: any) => console.log(`DELETE Tarjeta ${id} response:`, res)),
       map(() => undefined),
     );
   }

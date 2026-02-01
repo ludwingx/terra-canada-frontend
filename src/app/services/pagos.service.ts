@@ -285,11 +285,9 @@ export class PagosService {
   }
 
   cancelarPago(id: number): Observable<void> {
-    const usuario_id = this.getUsuarioIdForAudit();
-    const params = usuario_id ? { usuario_id } : {};
-    console.log(`DELETE Pago ${id} params:`, params);
-    return this.api.delete<{ success: boolean; data: null }>(`pagos/${id}`, params).pipe(
-      tap((res) => console.log(`DELETE Pago ${id} response:`, res)),
+    console.log(`DELETE Pago ${id}`);
+    return this.api.delete<{ success: boolean; data: null }>(`pagos/${id}`).pipe(
+      tap((res: any) => console.log(`DELETE Pago ${id} response:`, res)),
       map(() => undefined),
     );
   }
@@ -330,6 +328,22 @@ export class PagosService {
     console.log('POST Pago subir-extracto-banco payload:', payload);
     return this.api
       .post<{ success: boolean; mensaje: string }>(`pagos/subir-extracto-banco`, payload)
-      .pipe(tap((res) => console.log('POST Pago subir-extracto-banco response:', res)));
+      .pipe(tap((res: any) => console.log('POST Pago subir-extracto-banco response:', res)));
+  }
+
+  scanPagoDocumento(
+    pdfBase64: string,
+    pagoId: number | undefined,
+    _numeroPresta: any,
+  ): Observable<any> {
+    const payload = {
+      pdf: pdfBase64,
+      id_pago: pagoId,
+      usuario_id: this.getUsuarioIdForAudit(),
+    };
+    console.log('POST Pago scan documento payload:', payload);
+    return this.api
+      .post<{ success: boolean; mensaje: string }>(`pagos/documento-estado`, payload)
+      .pipe(tap((res: any) => console.log('POST Pago scan documento response:', res)));
   }
 }

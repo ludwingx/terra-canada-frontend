@@ -113,12 +113,10 @@ export class ProveedoresService {
   }
 
   deleteProveedor(id: number): Observable<void> {
-    const usuario_id = this.getUsuarioIdForAudit();
-    const params = usuario_id ? { usuario_id } : {};
-    console.log(`DELETE Proveedor ${id} params:`, params);
+    console.log(`DELETE Proveedor ${id}`);
 
-    return this.api.delete<{ success: boolean; data: any }>(`proveedores/${id}`, params).pipe(
-      tap((res) => console.log(`DELETE Proveedor ${id} response:`, res)),
+    return this.api.delete<{ success: boolean; data: any }>(`proveedores/${id}`).pipe(
+      tap((res: any) => console.log(`DELETE Proveedor ${id} response:`, res)),
       map(() => undefined),
     );
   }
